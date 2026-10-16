@@ -4,6 +4,24 @@ using System.Text.Json;
 namespace BalancePet.UsageAnalytics;
 
 /// <summary>
+/// A single quota window (e.g., 5-hour, 7-day, monthly) for a subscription account.
+/// Multiple windows can be active simultaneously and all are enforced independently.
+/// </summary>
+/// <param name="Type">Window type identifier: "5hour", "daily", "7day", "weekly", "monthly".</param>
+/// <param name="DisplayName">User-facing label, e.g., "5小时配额", "周配额".</param>
+/// <param name="Limit">Ceiling for this window. Null means unlimited (rare for quota windows).</param>
+/// <param name="Used">Current usage within this window.</param>
+/// <param name="ResetsAt">When this window resets. Null for monthly windows with a reset day.</param>
+/// <param name="ResetDay">Day of month for monthly windows (1-28). Null for rolling windows.</param>
+public sealed record QuotaWindow(
+    string Type,
+    string DisplayName,
+    double? Limit,
+    double Used,
+    DateTimeOffset? ResetsAt,
+    int? ResetDay = null);
+
+/// <summary>
 /// Resolves the opaque account ids in the balance snapshot to what the user chose
 /// in the host's settings.
 ///
@@ -36,7 +54,36 @@ public static class AccountDirectory
     /// <param name="Endpoint">Configured balance endpoint, used only to classify.</param>
     /// <param name="PresetId">Preset the account was created from, when known.</param>
     /// <param name="IsSubscription">User's declaration that the account is billed by subscription.</param>
-    public sealed record AccountInfo(string Name, string Endpoint, string PresetId, bool IsSubscription)
+    /// <param name="QuotaWindows">
+    /// Multiple concurrent quota windows (5-hour, weekly, monthly, etc.) for subscription accounts.
+    /// Each window is enforced independently; exhausting any window limits usage.
+    /// Replaces the legacy single QuotaLimit/QuotaResetDay fields.
+    /// </param>
+    /// <param name="QuotaLimit">
+    /// DEPRECATED: Single monthly quota ceiling. Use QuotaWindows for multi-window support.
+    /// Kept for backward compatibility with existing fixture data.
+    /// </param>
+    /// <param name="WarningBelow">
+    /// The user's own low-balance tripwire. Null means they never set one, so
+    /// nothing is highlighted — a lintel nobody chose is not a warning.
+    /// </param>
+    /// <param name="QuotaResetDay">
+    /// DEPRECATED: Day of the month the plan renews. Use QuotaWindows for multi-window support.
+    /// Kept for backward compatibility.
+    /// </param>
+    /// <param name="MonthlyBudget">
+    /// User-declared monthly spending cap for pay-as-you-go accounts.
+    /// </param>
+    public sealed record AccountInfo(
+        string Name,
+        string Endpoint,
+        string PresetId,
+        bool IsSubscription,
+        IReadOnlyList<QuotaWindow>? QuotaWindows = null,
+        double? QuotaLimit = null,
+        double? WarningBelow = null,
+        int? QuotaResetDay = null,
+        double? MonthlyBudget = null)
     {
         /// <summary>
         /// True when the account points at a vendor's own API rather than a relay.
@@ -77,7 +124,47 @@ public static class AccountDirectory
                 var key = ReadString(monitor, "id", 128);
                 var name = ReadString(monitor, "name", 64);
                 if (key.Length == 0 || name.Length == 0) continue;
-                accounts[key] = new AccountInfo(name, ReadString(monitor, "endpoint", 512), ReadString(monitor, "preset_id", 64), ReadBool(monitor, "is_subscription"));
+
+                // Read multi-window quota data if present
+                IReadOnlyList<QuotaWindow>? quotaWindows = null;
+                if (monitor.TryGetProperty("quota_windows", out var windowsArray) && windowsArray.ValueKind == JsonValueKind.Array)
+                {
+                    var windows = new List<QuotaWindow>();
+                    foreach (var window in windowsArray.EnumerateArray())
+                    {
+                        if (window.ValueKind != JsonValueKind.Object) continue;
+                        var type = ReadString(window, "type", 32);
+                        var displayName = ReadString(window, "display_name", 64);
+                        if (type.Length == 0 || displayName.Length == 0) continue;
+
+                        DateTimeOffset? resetsAt = null;
+                        if (window.TryGetProperty("resets_at", out var resetsAtValue) && resetsAtValue.ValueKind == JsonValueKind.String)
+                        {
+                            if (DateTimeOffset.TryParse(resetsAtValue.GetString(), out var parsed))
+                                resetsAt = parsed;
+                        }
+
+                        windows.Add(new QuotaWindow(
+                            type,
+                            displayName,
+                            ReadAmount(window, "limit"),
+                            ReadAmount(window, "used") ?? 0,
+                            resetsAt,
+                            ReadDay(window, "reset_day")));
+                    }
+                    if (windows.Count > 0) quotaWindows = windows;
+                }
+
+                accounts[key] = new AccountInfo(
+                    name,
+                    ReadString(monitor, "endpoint", 512),
+                    ReadString(monitor, "preset_id", 64),
+                    ReadBool(monitor, "is_subscription"),
+                    quotaWindows,
+                    ReadAmount(monitor, "quota_limit"),
+                    ReadAmount(monitor, "warning_below"),
+                    ReadDay(monitor, "quota_reset_day"),
+                    ReadAmount(monitor, "monthly_budget"));
             }
         }
         catch (IOException) { }
@@ -101,12 +188,50 @@ public static class AccountDirectory
         element.TryGetProperty(property, out var value)
         && value.ValueKind == JsonValueKind.True;
 
+    /// <summary>
+    /// A non-negative amount, or null. Null is the useful answer here and it is
+    /// reached three ways — absent, not a number, out of range — because all three
+    /// mean the same thing to the reader: this account has no such figure, so do
+    /// not compute one from it.
+    /// </summary>
+    private static double? ReadAmount(JsonElement element, string property)
+    {
+        if (!element.TryGetProperty(property, out var value) || value.ValueKind != JsonValueKind.Number) return null;
+        if (!value.TryGetDouble(out var amount) || !double.IsFinite(amount) || amount < 0 || amount > 10_000_000_000) return null;
+        return amount;
+    }
+
+    /// <summary>
+    /// A day of the month, or null. Clamped rather than rejected: 31 is a real
+    /// renewal day and February is the problem, not the user's choice of it. The
+    /// reader is where that has to be decided, because a clamped day is still a
+    /// truthful description of the plan while a rejected one throws the whole
+    /// account away.
+    /// </summary>
+    private static int? ReadDay(JsonElement element, string property)
+    {
+        if (!element.TryGetProperty(property, out var value) || value.ValueKind != JsonValueKind.Number) return null;
+        if (!value.TryGetInt32(out var day) || day < 1 || day > 31) return null;
+        return Math.Min(day, 28);
+    }
+
     /// <summary>Display name for an account id, falling back to a shortened id.</summary>
     public static string Label(IReadOnlyDictionary<string, string> names, string accountId)
     {
         if (names.TryGetValue(accountId, out var name)) return name;
         return Label(accountId);
     }
+
+    /// <summary>
+    /// The same, for a caller that already holds the full account records. An
+    /// account the host lists with no name is labelled by its id, exactly as one it
+    /// does not list at all: a row with a blank first column reads as a rendering
+    /// fault rather than as an account nobody named.
+    /// </summary>
+    public static string Label(IReadOnlyDictionary<string, AccountInfo> accounts, string accountId)
+        => accounts.TryGetValue(accountId, out var account) && account.Name.Length > 0
+            ? account.Name
+            : Label(accountId);
 
     /// <summary>Shortened id, for when the account is not in the settings at all.</summary>
     public static string Label(string accountId)

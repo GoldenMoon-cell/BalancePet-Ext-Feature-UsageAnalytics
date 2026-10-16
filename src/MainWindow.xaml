@@ -6,304 +6,611 @@
         Width="1120" Height="760" MinWidth="980" MinHeight="640"
         WindowStartupLocation="CenterScreen" WindowStyle="None" ResizeMode="CanResizeWithGrip"
         Background="{StaticResource PageBrush}" SnapsToDevicePixels="True" UseLayoutRounding="True"
+        TextOptions.TextFormattingMode="Display" TextOptions.TextRenderingMode="Grayscale"
+        FontFamily="{StaticResource UiFontFamily}"
         PreviewKeyDown="OnPreviewKeyDown">
   <shell:WindowChrome.WindowChrome>
     <shell:WindowChrome CaptionHeight="48" ResizeBorderThickness="6" CornerRadius="{DynamicResource WindowCornerRadius}" GlassFrameThickness="0" UseAeroCaptionButtons="False"/>
   </shell:WindowChrome.WindowChrome>
+
+  <!--
+    Layout, ported from the approved prototype (experiments/usage-ui-mockup):
+    48 px title bar, 208 px navigation rail, and one 864 px content column inset
+    24 px from the rail and 24 px from the window edge. The inset is what makes
+    every table on the page share one left edge and one right edge, so the
+    ledger's ten columns below add up to 830 of the 864 and no figure is clipped.
+  -->
   <Grid>
+    <Grid.RowDefinitions>
+      <RowDefinition Height="48"/>
+      <RowDefinition Height="*"/>
+    </Grid.RowDefinitions>
     <Grid.ColumnDefinitions>
-      <ColumnDefinition Width="208"/>
+      <ColumnDefinition Width="50"/>
+      <ColumnDefinition Width="1"/>
+      <ColumnDefinition Width="250"/>
+      <ColumnDefinition Width="1"/>
       <ColumnDefinition Width="*"/>
     </Grid.ColumnDefinitions>
-    <Border Grid.ColumnSpan="2" Height="48" VerticalAlignment="Top"
-            Background="{StaticResource SidebarBrush}" BorderBrush="#1B304A" BorderThickness="0,0,0,1"
+
+    <!-- ======================= title bar (48) ======================= -->
+    <Border Grid.Row="0" Grid.ColumnSpan="5" Background="{StaticResource SidebarBrush}"
+            BorderBrush="{StaticResource HairGridBrush}" BorderThickness="0,0,0,1"
             Panel.ZIndex="10" MouseLeftButtonDown="OnTitleBarMouseLeftButtonDown">
       <Grid Margin="18,0,10,0">
         <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-          <Border Width="28" Height="28" Background="{StaticResource AccentBrush}" CornerRadius="9" Margin="0,0,9,0">
-            <Image Source="assets/balance-pet.ico" Width="22" Height="22" Stretch="Uniform"/>
-          </Border>
-          <StackPanel VerticalAlignment="Center">
-            <TextBlock Text="BalancePet" FontSize="14" FontWeight="SemiBold"/>
-            <TextBlock Text="用量中心" Foreground="{StaticResource MutedBrush}" FontSize="10" Margin="0,1,0,0"/>
-          </StackPanel>
+          <Path Data="{StaticResource BrandMarkGeometry}" Fill="{StaticResource FlowRateBrush}"
+                Width="13" Height="13" Stretch="Uniform" VerticalAlignment="Center"/>
+          <TextBlock Text="BalancePet" FontSize="12.5" FontWeight="SemiBold" Margin="9,0,0,0" VerticalAlignment="Center"/>
+          <TextBlock Text="用量中心" FontSize="12.5" Foreground="{StaticResource SubtleBrush}" Margin="10,0,0,0" VerticalAlignment="Center"/>
         </StackPanel>
         <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-          <Button x:Name="MinimizeButton" Style="{StaticResource IconButton}" Click="OnMinimizeClick"
+          <Button x:Name="MinimizeButton" Style="{StaticResource CaptionButton}" Click="OnMinimizeClick"
                   ToolTip="最小化" shell:WindowChrome.IsHitTestVisibleInChrome="True">
             <Path Data="{StaticResource MinimizeIconGeometry}" Stroke="{StaticResource MutedBrush}"
-                  StrokeThickness="1.5" Width="14" Height="14" Stretch="Uniform"/>
+                  StrokeThickness="1.5" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                  Width="10" Height="10" Stretch="Uniform"/>
           </Button>
-          <Button x:Name="CloseButton" Style="{StaticResource IconButton}" Click="OnCloseClick"
+          <Button x:Name="CloseButton" Style="{StaticResource CaptionCloseButton}" Click="OnCloseClick"
                   ToolTip="关闭" shell:WindowChrome.IsHitTestVisibleInChrome="True">
             <Path Data="{StaticResource CloseIconGeometry}" Stroke="{StaticResource MutedBrush}"
-                  StrokeThickness="1.5" Width="14" Height="14" Stretch="Uniform"/>
+                  StrokeThickness="1.5" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                  Width="10" Height="10" Stretch="Uniform"/>
           </Button>
         </StackPanel>
       </Grid>
     </Border>
-    <Border Grid.Column="0" Margin="0,48,0,0" Background="{StaticResource SidebarBrush}"
-            BorderBrush="#172B45" BorderThickness="0,0,1,0">
-      <DockPanel Margin="18,22,18,18">
-        <StackPanel DockPanel.Dock="Top">
-          <TextBlock Text="工作台" Foreground="#61738E" FontSize="11" Margin="14,0,0,9"/>
-          <Button x:Name="DashboardNav" Style="{StaticResource NavButton}" Background="#123148"
-                  Foreground="{StaticResource AccentBrush}" FontWeight="SemiBold" Click="OnDashboardNavClick">
-            <Button.Triggers>
-              <EventTrigger RoutedEvent="MouseEnter">
-                <BeginStoryboard>
-                  <Storyboard>
-                    <DoubleAnimation Storyboard.TargetName="DashboardIcon" Storyboard.TargetProperty="RenderTransform.ScaleX" To="1.14" Duration="0:0:0.14"/>
-                    <DoubleAnimation Storyboard.TargetName="DashboardIcon" Storyboard.TargetProperty="RenderTransform.ScaleY" To="1.14" Duration="0:0:0.14"/>
-                  </Storyboard>
-                </BeginStoryboard>
-              </EventTrigger>
-              <EventTrigger RoutedEvent="MouseLeave">
-                <BeginStoryboard>
-                  <Storyboard>
-                    <DoubleAnimation Storyboard.TargetName="DashboardIcon" Storyboard.TargetProperty="RenderTransform.ScaleX" To="1" Duration="0:0:0.16"/>
-                    <DoubleAnimation Storyboard.TargetName="DashboardIcon" Storyboard.TargetProperty="RenderTransform.ScaleY" To="1" Duration="0:0:0.16"/>
-                  </Storyboard>
-                </BeginStoryboard>
-              </EventTrigger>
-            </Button.Triggers>
-            <StackPanel Orientation="Horizontal">
-              <Path x:Name="DashboardIcon" Data="{StaticResource DashboardIconGeometry}"
-                    Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
-                    Width="14" Height="14" Stretch="Uniform" Margin="1,0,13,0" VerticalAlignment="Center" RenderTransformOrigin="0.5,0.5">
-                <Path.RenderTransform><ScaleTransform ScaleX="1" ScaleY="1"/></Path.RenderTransform>
-              </Path>
-              <TextBlock Text="仪表盘" VerticalAlignment="Center"/>
-            </StackPanel>
+
+    <!-- ======================= icon rail (50) ======================= -->
+    <Border Grid.Row="1" Grid.Column="0" Background="{StaticResource SidebarBrush}">
+      <Grid>
+        <Grid.RowDefinitions>
+          <RowDefinition Height="*"/>
+          <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <StackPanel Grid.Row="0" Margin="0,6,0,0">
+          <Button x:Name="DashboardNav" Style="{StaticResource IconRailButton}" Click="OnDashboardNavClick"
+                  ToolTip="仪表盘" shell:WindowChrome.IsHitTestVisibleInChrome="False">
+            <Path x:Name="DashboardIcon" Data="{StaticResource DashboardIconGeometry}"
+                  Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                  Width="14" Height="14" Stretch="Uniform" RenderTransformOrigin="0.5,0.5">
+              <Path.RenderTransform><ScaleTransform ScaleX="1" ScaleY="1"/></Path.RenderTransform>
+            </Path>
           </Button>
-          <Button x:Name="HistoryNav" Style="{StaticResource NavButton}" Click="OnHistoryNavClick">
-            <Button.Triggers>
-              <EventTrigger RoutedEvent="MouseEnter">
-                <BeginStoryboard>
-                  <Storyboard>
-                    <DoubleAnimation Storyboard.TargetName="HistoryIcon" Storyboard.TargetProperty="RenderTransform.ScaleX" To="1.14" Duration="0:0:0.14"/>
-                    <DoubleAnimation Storyboard.TargetName="HistoryIcon" Storyboard.TargetProperty="RenderTransform.ScaleY" To="1.14" Duration="0:0:0.14"/>
-                  </Storyboard>
-                </BeginStoryboard>
-              </EventTrigger>
-              <EventTrigger RoutedEvent="MouseLeave">
-                <BeginStoryboard>
-                  <Storyboard>
-                    <DoubleAnimation Storyboard.TargetName="HistoryIcon" Storyboard.TargetProperty="RenderTransform.ScaleX" To="1" Duration="0:0:0.16"/>
-                    <DoubleAnimation Storyboard.TargetName="HistoryIcon" Storyboard.TargetProperty="RenderTransform.ScaleY" To="1" Duration="0:0:0.16"/>
-                  </Storyboard>
-                </BeginStoryboard>
-              </EventTrigger>
-            </Button.Triggers>
-            <StackPanel Orientation="Horizontal">
-              <Path x:Name="HistoryIcon" Data="{StaticResource HistoryIconGeometry}"
-                    Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
-                    Width="14" Height="14" Stretch="Uniform" Margin="1,0,13,0" VerticalAlignment="Center" RenderTransformOrigin="0.5,0.5">
-                <Path.RenderTransform><ScaleTransform ScaleX="1" ScaleY="1"/></Path.RenderTransform>
-              </Path>
-              <TextBlock Text="使用记录" VerticalAlignment="Center"/>
-            </StackPanel>
-          </Button>
-          <Button x:Name="DataDirectoryNav" Style="{StaticResource NavButton}" Click="OnOpenDataClick">
-            <Button.Triggers>
-              <EventTrigger RoutedEvent="MouseEnter">
-                <BeginStoryboard>
-                  <Storyboard>
-                    <DoubleAnimation Storyboard.TargetName="FolderIcon" Storyboard.TargetProperty="RenderTransform.ScaleX" To="1.14" Duration="0:0:0.14"/>
-                    <DoubleAnimation Storyboard.TargetName="FolderIcon" Storyboard.TargetProperty="RenderTransform.ScaleY" To="1.14" Duration="0:0:0.14"/>
-                  </Storyboard>
-                </BeginStoryboard>
-              </EventTrigger>
-              <EventTrigger RoutedEvent="MouseLeave">
-                <BeginStoryboard>
-                  <Storyboard>
-                    <DoubleAnimation Storyboard.TargetName="FolderIcon" Storyboard.TargetProperty="RenderTransform.ScaleX" To="1" Duration="0:0:0.16"/>
-                    <DoubleAnimation Storyboard.TargetName="FolderIcon" Storyboard.TargetProperty="RenderTransform.ScaleY" To="1" Duration="0:0:0.16"/>
-                  </Storyboard>
-                </BeginStoryboard>
-              </EventTrigger>
-            </Button.Triggers>
-            <StackPanel Orientation="Horizontal">
-              <Path x:Name="FolderIcon" Data="{StaticResource FolderIconGeometry}"
-                    Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
-                    Width="14" Height="14" Stretch="Uniform" Margin="1,0,13,0" VerticalAlignment="Center" RenderTransformOrigin="0.5,0.5">
-                <Path.RenderTransform><ScaleTransform ScaleX="1" ScaleY="1"/></Path.RenderTransform>
-              </Path>
-              <TextBlock Text="数据目录" VerticalAlignment="Center"/>
-            </StackPanel>
+          <Button x:Name="HistoryNav" Style="{StaticResource IconRailButton}" Click="OnHistoryNavClick"
+                  ToolTip="使用记录" shell:WindowChrome.IsHitTestVisibleInChrome="False">
+            <Path x:Name="HistoryIcon" Data="{StaticResource HistoryIconGeometry}"
+                  Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                  Width="14" Height="14" Stretch="Uniform" RenderTransformOrigin="0.5,0.5">
+              <Path.RenderTransform><ScaleTransform ScaleX="1" ScaleY="1"/></Path.RenderTransform>
+            </Path>
           </Button>
         </StackPanel>
-        <StackPanel DockPanel.Dock="Bottom" Margin="0,18,0,0">
-          <Border Height="1" Background="#1B304A" Margin="5,0,5,16"/>
-          <TextBlock Text="本地只读统计" Foreground="{StaticResource MutedBrush}" FontSize="11" Margin="14,0,0,6"/>
-          <TextBlock Text="不读取令牌、提示词或回复" Foreground="#6D829F" FontSize="11"
-                     TextWrapping="Wrap" Margin="14,0,8,0"/>
+        <StackPanel Grid.Row="1" Margin="0,0,0,8">
+          <Button x:Name="DataDirectoryNav" Style="{StaticResource IconRailButton}" Click="OnOpenDataClick"
+                  ToolTip="打开数据目录" shell:WindowChrome.IsHitTestVisibleInChrome="False">
+            <Path x:Name="FolderIcon" Data="{StaticResource FolderIconGeometry}"
+                  Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                  Width="14" Height="14" Stretch="Uniform" RenderTransformOrigin="0.5,0.5">
+              <Path.RenderTransform><ScaleTransform ScaleX="1" ScaleY="1"/></Path.RenderTransform>
+            </Path>
+          </Button>
         </StackPanel>
-      </DockPanel>
+      </Grid>
     </Border>
-    <ScrollViewer x:Name="ContentScrollViewer" Grid.Column="1" Margin="0,48,0,0"
+
+    <!-- col 1: separator -->
+    <Border Grid.Row="1" Grid.Column="1" Background="{StaticResource HairGridBrush}"/>
+
+    <!-- ======================= account list (250) ======================= -->
+    <Border Grid.Row="1" Grid.Column="2" Background="{StaticResource PageBrush}">
+      <Grid>
+        <Grid.RowDefinitions>
+          <RowDefinition Height="50"/>
+          <RowDefinition Height="*"/>
+          <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- header: "账户" + refresh -->
+        <Border Grid.Row="0" BorderBrush="{StaticResource HairGridBrush}" BorderThickness="0,0,0,1">
+          <Grid Margin="16,0,4,0">
+            <TextBlock Text="账户" FontSize="10.5" FontWeight="SemiBold"
+                       Foreground="{StaticResource SubtleBrush}" VerticalAlignment="Center"/>
+            <Button x:Name="RefreshButton" HorizontalAlignment="Right"
+                    Style="{StaticResource IconRailButton}" Click="OnRefreshClick"
+                    ToolTip="重新读取数据目录，并请求 BalancePet 刷新余额"
+                    shell:WindowChrome.IsHitTestVisibleInChrome="False">
+              <Path x:Name="RefreshIcon" Data="{StaticResource RefreshIconGeometry}"
+                    Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                    StrokeThickness="1.3" StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round"
+                    Width="13" Height="13" Stretch="Uniform" RenderTransformOrigin="0.5,0.5">
+                <Path.RenderTransform>
+                  <TransformGroup>
+                    <ScaleTransform ScaleX="1" ScaleY="1"/>
+                    <RotateTransform Angle="0"/>
+                  </TransformGroup>
+                </Path.RenderTransform>
+              </Path>
+            </Button>
+          </Grid>
+        </Border>
+
+        <!-- hidden AccountSelector — code-behind uses Items for option tracking -->
+        <ComboBox x:Name="AccountSelector" Grid.Row="0" Visibility="Collapsed" Width="0" Height="0"
+                  SelectionChanged="OnAccountSelectionChanged"/>
+
+        <!-- account items (built in code) -->
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+          <StackPanel x:Name="AccountListPanel" Margin="0,4,0,4"/>
+        </ScrollViewer>
+
+        <!-- footer -->
+        <StackPanel Grid.Row="2" Margin="16,8,16,12">
+          <Border Height="1" Background="{StaticResource HairGridBrush}" Margin="0,0,0,10"/>
+          <StackPanel Orientation="Horizontal">
+            <Ellipse Width="5" Height="5" Fill="{StaticResource FlowRateBrush}" VerticalAlignment="Center"/>
+            <TextBlock Text="本地只读统计" Foreground="{StaticResource SubtleBrush}"
+                       FontSize="10" Margin="7,0,0,0" VerticalAlignment="Center"/>
+          </StackPanel>
+          <TextBlock Text="不读取令牌、提示词或回复" Foreground="{StaticResource SubtleBrush}"
+                     FontSize="10" TextWrapping="Wrap" Margin="12,4,0,0"/>
+        </StackPanel>
+      </Grid>
+    </Border>
+
+    <!-- col 3: separator -->
+    <Border Grid.Row="1" Grid.Column="3" Background="{StaticResource HairGridBrush}"/>
+    <!-- ======================= dashboard ======================= -->
+    <ScrollViewer x:Name="ContentScrollViewer" Grid.Row="1" Grid.Column="4" Margin="14,0,14,0"
                   VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
                   ScrollChanged="OnContentScrollChanged">
-      <StackPanel Margin="28,26,30,30">
-        <Grid Margin="0,0,0,20">
-          <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-          <StackPanel>
-            <TextBlock Text="仪表盘" FontSize="28" FontWeight="Bold"/>
-            <TextBlock Text="本机 AI 请求与 Token 使用概览" Foreground="{StaticResource MutedBrush}"
-                       FontSize="13" Margin="0,4,0,0"/>
-          </StackPanel>
-          <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
-            <TextBlock Text="账户" Foreground="{StaticResource MutedBrush}" FontSize="12" VerticalAlignment="Center" Margin="0,0,8,0"/>
-            <ComboBox x:Name="AccountSelector" Width="164" Height="30" Style="{StaticResource TrendRangeComboBox}"
-                      SelectionChanged="OnAccountSelectionChanged" Margin="0,0,12,0"/>
-            <Button x:Name="RefreshButton" Click="OnRefreshClick" Padding="14,8" Height="36"
-                    Background="{StaticResource PanelAltBrush}" BorderBrush="{StaticResource PanelBorderBrush}"
-                    ToolTip="重新读取数据目录，并请求主程序刷新余额">
-              <Button.Triggers>
-                <EventTrigger RoutedEvent="MouseEnter">
-                  <BeginStoryboard>
-                    <Storyboard>
-                      <DoubleAnimation Storyboard.TargetName="RefreshIcon" Storyboard.TargetProperty="RenderTransform.Children[0].ScaleX" To="1.12" Duration="0:0:0.14"/>
-                      <DoubleAnimation Storyboard.TargetName="RefreshIcon" Storyboard.TargetProperty="RenderTransform.Children[0].ScaleY" To="1.12" Duration="0:0:0.14"/>
-                    </Storyboard>
-                  </BeginStoryboard>
-                </EventTrigger>
-                <EventTrigger RoutedEvent="MouseLeave">
-                  <BeginStoryboard>
-                    <Storyboard>
-                      <DoubleAnimation Storyboard.TargetName="RefreshIcon" Storyboard.TargetProperty="RenderTransform.Children[0].ScaleX" To="1" Duration="0:0:0.16"/>
-                      <DoubleAnimation Storyboard.TargetName="RefreshIcon" Storyboard.TargetProperty="RenderTransform.Children[0].ScaleY" To="1" Duration="0:0:0.16"/>
-                    </Storyboard>
-                  </BeginStoryboard>
-                </EventTrigger>
-              </Button.Triggers>
-              <StackPanel Orientation="Horizontal">
-                <!-- Open arc: stroked, never filled. Stretch scales the pen by
-                     15/10, so a thickness of 1 renders at about 1.5. -->
-                <Path x:Name="RefreshIcon" Data="{StaticResource RefreshIconGeometry}"
-                      Stroke="{StaticResource AccentBrush}" StrokeThickness="1"
-                      StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round"
-                      Width="15" Height="15" Stretch="Uniform" VerticalAlignment="Center" Margin="0,0,8,0"
-                      RenderTransformOrigin="0.5,0.5">
-                  <Path.RenderTransform>
-                    <TransformGroup>
-                      <ScaleTransform ScaleX="1" ScaleY="1"/>
-                      <RotateTransform Angle="0"/>
-                    </TransformGroup>
-                  </Path.RenderTransform>
-                </Path>
-                <TextBlock Text="刷新" Foreground="{StaticResource TextBrush}" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center"/>
-              </StackPanel>
-            </Button>
-          </StackPanel>
+      <StackPanel>
+        <Grid Height="46">
+          <TextBlock x:Name="DashboardTitle" Text="仪表盘" Style="{StaticResource PageTitle}"/>
         </Grid>
-        <Grid Margin="0,0,0,12">
-          <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition/><ColumnDefinition/><ColumnDefinition/></Grid.ColumnDefinitions>
-          <Border Grid.Column="0" Margin="0,0,6,0" Padding="15,14" Background="{StaticResource PanelBrush}"
-                  BorderBrush="{StaticResource PanelBorderBrush}" BorderThickness="1" CornerRadius="10">
-            <StackPanel>
-              <TextBlock Text="近 24 小时 Token" Foreground="{StaticResource MutedBrush}" FontSize="12"/>
-              <TextBlock x:Name="TwentyFourHourTokens" Text="—" FontSize="26" FontWeight="Bold"
-                         Foreground="{StaticResource AccentBrush}" Margin="0,8,0,0"/>
-              <TextBlock Text="输入 + 输出" Foreground="{StaticResource SubtleBrush}" FontSize="11" Margin="0,3,0,0"/>
-            </StackPanel>
-          </Border>
-          <Border Grid.Column="1" Margin="6" Padding="15,14" Background="{StaticResource PanelBrush}"
-                  BorderBrush="{StaticResource PanelBorderBrush}" BorderThickness="1" CornerRadius="10">
-            <StackPanel>
-              <TextBlock Text="累计 Token" Foreground="{StaticResource MutedBrush}" FontSize="12"/>
-              <TextBlock x:Name="AllTimeTokens" Text="—" FontSize="26" FontWeight="Bold"
-                         Foreground="{StaticResource BlueBrush}" Margin="0,8,0,0"/>
-              <TextBlock x:Name="AllTimeTokenBreakdown" Text="输入 — / 输出 —" Foreground="{StaticResource SubtleBrush}"
-                         FontSize="11" Margin="0,3,0,0"/>
-            </StackPanel>
-          </Border>
-          <Border Grid.Column="2" Margin="6" Padding="15,14" Background="{StaticResource PanelBrush}"
-                  BorderBrush="{StaticResource PanelBorderBrush}" BorderThickness="1" CornerRadius="10">
-            <StackPanel>
-              <TextBlock Text="请求次数" Foreground="{StaticResource MutedBrush}" FontSize="12"/>
-              <TextBlock x:Name="Requests" Text="—" FontSize="26" FontWeight="Bold"
-                         Foreground="{StaticResource PurpleBrush}" Margin="0,8,0,0"/>
-              <TextBlock x:Name="SuccessRate" Text="成功率 —" Foreground="{StaticResource SubtleBrush}"
-                         FontSize="11" Margin="0,3,0,0"/>
-            </StackPanel>
-          </Border>
-          <Border Grid.Column="3" Margin="6,0,0,0" Padding="15,14" Background="{StaticResource PanelBrush}"
-                  BorderBrush="{StaticResource PanelBorderBrush}" BorderThickness="1" CornerRadius="10">
-            <StackPanel>
-              <TextBlock Text="缓存命中率" Foreground="{StaticResource MutedBrush}" FontSize="12"/>
-              <TextBlock x:Name="CacheHit" Text="—" FontSize="26" FontWeight="Bold"
-                         Foreground="{StaticResource OrangeBrush}" Margin="0,8,0,0"/>
-              <TextBlock Text="Cache Read / Input" Foreground="{StaticResource SubtleBrush}" FontSize="11" Margin="0,3,0,0"/>
-            </StackPanel>
-          </Border>
-        </Grid>
-        <Grid Margin="0,0,0,12">
-          <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition/><ColumnDefinition/><ColumnDefinition/></Grid.ColumnDefinitions>
-          <Border Grid.Column="0" Margin="0,0,6,0" Padding="15,14" Background="{StaticResource PanelBrush}"
-                  BorderBrush="{StaticResource PanelBorderBrush}" BorderThickness="1" CornerRadius="10">
-            <StackPanel>
-              <TextBlock Text="余额变化估算" Foreground="{StaticResource MutedBrush}" FontSize="12"/>
-              <TextBlock x:Name="TodayUsage" Text="暂无数据" FontSize="21" FontWeight="SemiBold" Margin="0,8,0,0"/>
-              <TextBlock x:Name="TodayUsageHint" Text="本地余额下降估算 · 今日" Foreground="{StaticResource SubtleBrush}" FontSize="11" Margin="0,3,0,0" TextWrapping="Wrap"/>
-            </StackPanel>
-          </Border>
-          <Border Grid.Column="1" Margin="6" Padding="15,14" Background="{StaticResource PanelBrush}"
-                  BorderBrush="{StaticResource PanelBorderBrush}" BorderThickness="1" CornerRadius="10">
-            <StackPanel>
-              <TextBlock Text="输出速度" Foreground="{StaticResource MutedBrush}" FontSize="12"/>
-              <TextBlock x:Name="Throughput" Text="—" FontSize="21" FontWeight="SemiBold" Margin="0,8,0,0"/>
-              <TextBlock Text="Output / duration" Foreground="{StaticResource SubtleBrush}" FontSize="11" Margin="0,3,0,0"/>
-            </StackPanel>
-          </Border>
-          <Border Grid.Column="2" Margin="6" Padding="15,14" Background="{StaticResource PanelBrush}"
-                  BorderBrush="{StaticResource PanelBorderBrush}" BorderThickness="1" CornerRadius="10">
-            <StackPanel>
-              <TextBlock Text="平均任务耗时" Foreground="{StaticResource MutedBrush}" FontSize="12"/>
-              <TextBlock x:Name="AverageDuration" Text="—" FontSize="21" FontWeight="SemiBold" Margin="0,8,0,0"/>
-              <TextBlock Text="事件记录耗时" Foreground="{StaticResource SubtleBrush}" FontSize="11" Margin="0,3,0,0"/>
-            </StackPanel>
-          </Border>
-          <Border Grid.Column="3" Margin="6,0,0,0" Padding="15,14" Background="{StaticResource PanelBrush}"
-                  BorderBrush="{StaticResource PanelBorderBrush}" BorderThickness="1" CornerRadius="10">
-            <StackPanel>
-              <TextBlock Text="提供方 / 模型" Foreground="{StaticResource MutedBrush}" FontSize="12"/>
-              <TextBlock x:Name="ProviderModelCount" Text="—" FontSize="21" FontWeight="SemiBold" Margin="0,8,0,0"/>
-              <TextBlock Text="已记录的维度" Foreground="{StaticResource SubtleBrush}" FontSize="11" Margin="0,3,0,0"/>
-            </StackPanel>
-          </Border>
-        </Grid>
-        <Border Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource PanelBorderBrush}"
-                BorderThickness="1" CornerRadius="10" Padding="17,15" Margin="0,0,0,12">
+
+        <!-- ============ the balance ruler, full width ============
+             One card, two readings, routed by UsageEvent.PlanType — and, when the
+             user's own account declares it, by that declaration, because a client
+             that never reports a plan still bills by subscription on an account
+             the user labelled. A subscription has a ceiling and a renewal date; a
+             pay-as-you-go key has neither, so it gets a balance, a measured pace
+             and the user's own tripwire, and no percentage anywhere: a bar against
+             an invented denominator is a made-up number wearing a progress bar.
+
+             The amount is the window's only 26 px figure. Motion never changes its
+             size or font. -->
+        <Border Style="{StaticResource Card}" Padding="18,14,18,16">
           <Grid>
-            <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition/><ColumnDefinition/></Grid.ColumnDefinitions>
-            <StackPanel Margin="0,0,18,0">
-              <TextBlock Text="本地余额快照" Foreground="{StaticResource MutedBrush}" FontSize="12"/>
-              <TextBlock x:Name="TotalBalance" Text="暂无数据" FontSize="25" FontWeight="SemiBold" Margin="0,6,0,0"/>
-              <TextBlock x:Name="TotalBalanceHint" Text="主程序尚无余额快照" Foreground="{StaticResource SubtleBrush}" FontSize="11" Margin="0,3,0,0" TextWrapping="Wrap"/>
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="Auto"/>
+              <ColumnDefinition Width="*"/>
+              <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <!-- One row, deliberately. An earlier version put the pay-as-you-go
+                 pace line in a second row, and the card grew to fit a row that was
+                 measured before the first one had settled: the ruler ended up
+                 hanging below the card it belongs to. Everything here is a short
+                 stack beside the amount, not under it. -->
+            <Grid.RowDefinitions>
+              <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <!-- money: the window's only 26 px figure. -->
+            <StackPanel Grid.Row="0" Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+              <TextBlock x:Name="BalanceAmount" Text="余额" Style="{StaticResource RowLabel}" Margin="0,0,10,0"/>
+              <TextBlock x:Name="TotalBalance" Text="暂无数据" Style="{StaticResource BalanceFigure}"/>
+              <TextBlock x:Name="BalanceCurrency" Text="USD" FontSize="10.5" Foreground="{StaticResource MutedBrush}"
+                         Margin="6,0,0,0" VerticalAlignment="Center"/>
             </StackPanel>
-            <Border Grid.Column="1" Margin="18,0" BorderBrush="{StaticResource PanelBorderBrush}" BorderThickness="1,0,1,0" Padding="18,0">
-              <StackPanel>
-                <TextBlock Text="累计余额变化" Foreground="{StaticResource MutedBrush}" FontSize="12"/>
-                <TextBlock x:Name="TotalUsage" Text="暂无数据" FontSize="25" FontWeight="SemiBold" Margin="0,6,0,0"/>
-                <TextBlock x:Name="TotalUsageHint" Text="等待主程序累计记录" Foreground="{StaticResource SubtleBrush}" FontSize="11" Margin="0,3,0,0" TextWrapping="Wrap"/>
+
+            <!-- Pay-as-you-go: no ceiling to draw, so the line where the ruler
+                 would be states the pace and the tripwire in words. -->
+            <StackPanel x:Name="ApiPacePanel" Grid.Row="0" Grid.Column="1" Margin="26,0,26,0"
+                        VerticalAlignment="Center" Visibility="Collapsed">
+              <Grid Margin="0,0,0,5">
+                <TextBlock x:Name="ApiRulerLabel" Text="余额快照" Style="{StaticResource RowLabel}" HorizontalAlignment="Left"/>
+                <TextBlock x:Name="ApiWindowText" Style="{StaticResource Digit}" FontSize="10.5"
+                           Foreground="{StaticResource StaleTintBrush}" HorizontalAlignment="Right"/>
+              </Grid>
+              <!-- Optional monthly-budget bar. Hidden when no budget is declared. -->
+              <Grid x:Name="BudgetBarSection" Margin="0,5,0,5" Visibility="Collapsed">
+                <Grid.RowDefinitions>
+                  <RowDefinition Height="Auto"/>
+                  <RowDefinition Height="8"/>
+                  <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <Grid Grid.Row="0" Margin="0,0,0,4">
+                  <TextBlock x:Name="BudgetBarLabel" Text="本月预算" Style="{StaticResource RowLabel}" HorizontalAlignment="Left"/>
+                  <TextBlock x:Name="BudgetBarPercent" Style="{StaticResource Digit}" FontSize="10.5"
+                             Foreground="{StaticResource FlowRateBrush}" HorizontalAlignment="Right"/>
+                </Grid>
+                <Grid Grid.Row="1" ClipToBounds="True">
+                  <Rectangle Fill="{StaticResource QuotaTrackBrush}" RadiusX="4" RadiusY="4"/>
+                  <Grid x:Name="BudgetFillTrack" ClipToBounds="True">
+                    <Grid.RenderTransform>
+                      <ScaleTransform x:Name="BudgetFillScale" ScaleX="0" ScaleY="1"/>
+                    </Grid.RenderTransform>
+                    <Rectangle x:Name="BudgetFillRect" Fill="{StaticResource FlowRateBrush}" RadiusX="3" RadiusY="3"/>
+                  </Grid>
+                </Grid>
+                <TextBlock x:Name="BudgetBarUsedText" Grid.Row="2" Style="{StaticResource Note}" FontSize="10"
+                           Foreground="{StaticResource StaleTintBrush}" Margin="0,4,0,0"/>
+              </Grid>
+              <StackPanel Orientation="Horizontal" Height="10">
+                <Ellipse Width="6" Height="6" Fill="{StaticResource FlowRateBrush}" VerticalAlignment="Center"/>
+                <TextBlock Text="按今日速率推算的可用量" Style="{StaticResource RowLabel}" Margin="8,0,0,0" VerticalAlignment="Center"/>
               </StackPanel>
-            </Border>
-            <StackPanel Grid.Column="2" Margin="18,0,0,0">
-              <TextBlock Text="站点今日用量" Foreground="{StaticResource MutedBrush}" FontSize="12"/>
-              <TextBlock x:Name="ServerUsageSummary" Text="暂无数据" FontSize="25" FontWeight="SemiBold"
-                         Foreground="{StaticResource PurpleBrush}" Margin="0,6,0,0" TextTrimming="CharacterEllipsis"/>
-              <TextBlock x:Name="ServerUsageSummaryHint" Text="当前站点尚无今日用量" Foreground="{StaticResource SubtleBrush}"
-                         FontSize="11" Margin="0,3,0,0" TextWrapping="Wrap"/>
+              <Grid Margin="0,7,0,0">
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="Auto"/>
+                  <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                  <TextBlock x:Name="ApiRecentThirtyText" Style="{StaticResource Digit}" FontSize="11"/>
+                  <TextBlock Text="近 30 天" Style="{StaticResource RowLabel}" Margin="8,0,0,0"/>
+                </StackPanel>
+                <TextBlock x:Name="ApiEstimateNote" Grid.Column="1" Style="{StaticResource Note}" FontSize="10.5"
+                           HorizontalAlignment="Right" VerticalAlignment="Center"/>
+              </Grid>
+              <TextBlock x:Name="ApiDaysText" Style="{StaticResource Digit}" FontSize="13" FontWeight="SemiBold"
+                         Margin="0,6,0,0"/>
+              <TextBlock x:Name="ApiRateBadge" Style="{StaticResource Note}" FontSize="10.5" Margin="0,4,0,0" TextWrapping="Wrap"/>
+              <TextBlock x:Name="ApiRateWindow" Style="{StaticResource Note}" FontSize="10.5" Margin="0,3,0,0"
+                         Foreground="{StaticResource StaleTintBrush}"/>
+            </StackPanel>
+
+            <!-- Multi-window subscription quota ruler: collapsible card showing most critical window -->
+            <StackPanel x:Name="QuotaRuler" Grid.Row="0" Grid.Column="1" Margin="26,0,26,0" VerticalAlignment="Center">
+              <Grid Margin="0,0,0,5">
+                <TextBlock x:Name="QuotaLabel" Text="套餐额度" Style="{StaticResource RowLabel}" HorizontalAlignment="Left"/>
+                <TextBlock x:Name="QuotaAccountType" Text="订阅账户" Style="{StaticResource Digit}" FontSize="10.5"
+                           Foreground="{StaticResource StaleTintBrush}" HorizontalAlignment="Right"/>
+              </Grid>
+              
+              <!-- Dynamically populated quota windows (primary + additional) -->
+              <StackPanel x:Name="QuotaWindowsContainer" Orientation="Vertical"/>
+              
+              <TextBlock x:Name="TotalUsageHint" Text="额度上限未上报 · 这里只显示已用" Style="{StaticResource Note}" FontSize="10.5"
+                         Foreground="{StaticResource StaleTintBrush}" Margin="0,10,0,0" TextWrapping="Wrap"/>
+            </StackPanel>
+
+            <!-- today's spend is the same reading either way: a plan is consumed
+                 and a balance is drawn down, and both are measured in money. -->
+            <StackPanel Grid.Row="0" Grid.Column="2" VerticalAlignment="Center" HorizontalAlignment="Right">
+              <TextBlock x:Name="TodayUsageCaption" Text="今日费用" Style="{StaticResource RowLabel}" HorizontalAlignment="Right"/>
+              <TextBlock x:Name="TodayUsage" Text="暂无数据" Style="{StaticResource Digit}" FontSize="20"
+                         FontWeight="SemiBold" HorizontalAlignment="Right" Margin="0,5,0,0"/>
+              <TextBlock x:Name="TodayUsageHint" Text="尚无余额变化记录" Style="{StaticResource Note}" FontSize="10.5"
+                         Foreground="{StaticResource StaleTintBrush}" HorizontalAlignment="Right"
+                         Margin="0,4,0,0" MaxWidth="210" TextWrapping="Wrap" TextAlignment="Right"/>
             </StackPanel>
           </Grid>
         </Border>
+
+        <!--   four columns on one shared column head
+             Each column carries its own label cell and its own figure cell in one
+             shared Grid, so every reading is right-aligned against a cell of its
+             own and the decimal points line up down the column. Heights are fixed
+             per row, which is what keeps the four heads on one baseline.
+
+             Four across is not always the better arrangement: at a 980 px window
+             each column is 146 px, which is narrower than 「提供方 / 模型」 and its
+             figure need. The panels are reflowed rather than squeezed — see
+             MainWindow.ReflowMetricStrip — and each keeps its own content, so the
+             readings a person compares stay in one column or one row of two. -->
+        <Grid x:Name="MetricStrip" Margin="2,18,2,0" SizeChanged="OnMetricStripSizeChanged">
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="*"/>
+          </Grid.ColumnDefinitions>
+
+          <StackPanel x:Name="MetricPanelTokens" Grid.Column="0" Margin="0,0,22,0">
+            <TextBlock Text="24 小时结算" Style="{StaticResource SectionTitle}"/>
+            <Border Style="{StaticResource RowSeparator}" Margin="0,9,0,9"/>
+            <Grid>
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+              </Grid.ColumnDefinitions>
+              <Grid.RowDefinitions>
+                <RowDefinition Height="19"/><RowDefinition Height="19"/>
+                <RowDefinition Height="19"/><RowDefinition Height="19"/>
+              </Grid.RowDefinitions>
+              <TextBlock Grid.Row="0" Grid.Column="0" Text="输入 / 输出" Style="{StaticResource RowLabel}"/>
+              <TextBlock Grid.Row="1" Grid.Column="0" Text="请求" Style="{StaticResource RowLabel}"/>
+              <TextBlock Grid.Row="2" Grid.Column="0" Text="成功" Style="{StaticResource RowLabel}"/>
+              <TextBlock Grid.Row="3" Grid.Column="0" Text="输出速率" Style="{StaticResource RowLabel}"/>
+              <TextBlock x:Name="TwentyFourHourTokens" Grid.Row="0" Grid.Column="1" Text="—" Style="{StaticResource FigureCell}"
+                         TextTrimming="CharacterEllipsis" ToolTip="{Binding RelativeSource={RelativeSource Self}, Path=Text}"/>
+              <TextBlock x:Name="Requests" Grid.Row="1" Grid.Column="1" Text="—" Style="{StaticResource FigureCell}"/>
+              <TextBlock x:Name="SuccessRate" Grid.Row="2" Grid.Column="1" Text="成功率 —" Style="{StaticResource FigureCell}"/>
+              <TextBlock x:Name="Throughput" Grid.Row="3" Grid.Column="1" Text="—" Style="{StaticResource FigureCell}"/>
+            </Grid>
+          </StackPanel>
+
+          <StackPanel x:Name="MetricPanelRate" Grid.Column="1" Margin="0,0,22,0">
+            <TextBlock Text="速率与延迟" Style="{StaticResource SectionTitle}"/>
+            <Border Style="{StaticResource RowSeparator}" Margin="0,9,0,9"/>
+            <Grid>
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+              </Grid.ColumnDefinitions>
+              <Grid.RowDefinitions>
+                <RowDefinition Height="19"/><RowDefinition Height="19"/>
+                <RowDefinition Height="19"/><RowDefinition Height="19"/>
+                <RowDefinition Height="19"/>
+              </Grid.RowDefinitions>
+              <TextBlock Grid.Row="0" Grid.Column="0" Text="首字延迟" Style="{StaticResource RowLabel}"/>
+              <TextBlock Grid.Row="1" Grid.Column="0" Text="平均时长" Style="{StaticResource RowLabel}"/>
+              <TextBlock Grid.Row="2" Grid.Column="0" Text="提供方 / 模型" Style="{StaticResource RowLabel}"/>
+              <TextBlock Grid.Row="3" Grid.Column="0" Text="累计 Token" Style="{StaticResource RowLabel}"/>
+              <TextBlock Grid.Row="4" Grid.Column="0" Text="数据范围" Style="{StaticResource RowLabel}"/>
+              <TextBlock x:Name="FirstTokenValue" Grid.Row="0" Grid.Column="1" Text="—" Style="{StaticResource FigureCell}"/>
+              <TextBlock x:Name="AverageDuration" Grid.Row="1" Grid.Column="1" Text="—" Style="{StaticResource FigureCell}"/>
+              <TextBlock x:Name="ProviderModelCount" Grid.Row="2" Grid.Column="1" Text="—" Style="{StaticResource FigureCell}"/>
+              <TextBlock x:Name="AllTimeTokens" Grid.Row="3" Grid.Column="1" Text="—" Style="{StaticResource FigureCell}"/>
+              <TextBlock x:Name="RangeCaption" Grid.Row="4" Grid.Column="1" Text="—" Style="{StaticResource UnreportedCell}"/>
+            </Grid>
+          </StackPanel>
+
+          <StackPanel x:Name="MetricPanelCache" Grid.Column="2" Margin="0,0,22,0">
+            <TextBlock Text="缓存结构" Style="{StaticResource SectionTitle}"/>
+            <Border Style="{StaticResource RowSeparator}" Margin="0,9,0,9"/>
+            <Grid>
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+              </Grid.ColumnDefinitions>
+              <Grid.RowDefinitions>
+                <RowDefinition Height="19"/><RowDefinition Height="19"/>
+                <RowDefinition Height="19"/><RowDefinition Height="19"/>
+              </Grid.RowDefinitions>
+              <TextBlock Grid.Row="0" Grid.Column="0" Text="命中" Style="{StaticResource RowLabel}"/>
+              <TextBlock Grid.Row="1" Grid.Column="0" Text="缓存写" Style="{StaticResource RowLabel}"/>
+              <TextBlock Grid.Row="2" Grid.Column="0" Text="累计输入/输出" Style="{StaticResource RowLabel}"/>
+              <TextBlock Grid.Row="3" Grid.Column="0" Text="口径" Style="{StaticResource RowLabel}"/>
+              <TextBlock x:Name="CacheHit" Grid.Row="0" Grid.Column="1" Text="—" Style="{StaticResource FigureCell}"
+                         Foreground="{StaticResource FlowRateBrush}"/>
+              <TextBlock x:Name="CacheWriteValue" Grid.Row="1" Grid.Column="1" Text="—" Style="{StaticResource FigureCell}"/>
+              <TextBlock x:Name="AllTimeTokenBreakdown" Grid.Row="2" Grid.Column="1" Text="输入 — / 输出 —" Style="{StaticResource FigureCell}"
+                         TextTrimming="CharacterEllipsis" ToolTip="{Binding RelativeSource={RelativeSource Self}, Path=Text}"/>
+              <TextBlock x:Name="CacheFormulaText" Grid.Row="3" Grid.Column="1" Text="缓存读取 ÷ 输入"
+                         Style="{StaticResource UnreportedCell}"
+                         TextTrimming="CharacterEllipsis" ToolTip="{Binding RelativeSource={RelativeSource Self}, Path=Text}"/>
+            </Grid>
+          </StackPanel>
+
+          <StackPanel x:Name="MetricPanelSite" Grid.Column="3">
+            <TextBlock Text="站点今日" Style="{StaticResource SectionTitle}"/>
+            <Border Style="{StaticResource RowSeparator}" Margin="0,9,0,9"/>
+            <Grid>
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+              </Grid.ColumnDefinitions>
+              <Grid.RowDefinitions>
+                <RowDefinition Height="19"/><RowDefinition Height="19"/>
+                <RowDefinition Height="19"/><RowDefinition Height="19"/>
+              </Grid.RowDefinitions>
+              <TextBlock Grid.Row="0" Grid.Column="0" Text="金额" Style="{StaticResource RowLabel}"/>
+              <TextBlock Grid.Row="1" Grid.Column="0" Text="日期" Style="{StaticResource RowLabel}"/>
+              <TextBlock Grid.Row="2" Grid.Column="0" Text="来源" Style="{StaticResource RowLabel}"/>
+              <TextBlock Grid.Row="3" Grid.Column="0" Text="口径" Style="{StaticResource RowLabel}"/>
+              <TextBlock x:Name="ServerUsageSummary" Grid.Row="0" Grid.Column="1" Text="暂无数据" Style="{StaticResource FigureCell}"/>
+              <TextBlock x:Name="ServerUsageDate" Grid.Row="1" Grid.Column="1" Text="—" Style="{StaticResource FigureCell}"/>
+              <TextBlock x:Name="ServerUsageSource" Grid.Row="2" Grid.Column="1" Text="—" Style="{StaticResource FigureCell}"/>
+              <TextBlock x:Name="ServerUsageSummaryHint" Grid.Row="3" Grid.Column="1" Text="当前站点尚无今日用量"
+                         Style="{StaticResource UnreportedCell}" TextTrimming="CharacterEllipsis"/>
+            </Grid>
+          </StackPanel>
+        </Grid>
+
+        <!-- ============ models ============ -->
+        <Grid Margin="2,22,2,0">
+          <TextBlock Text="模型" Style="{StaticResource SectionTitle}"/>
+          <TextBlock x:Name="ModelScopeText" Style="{StaticResource Note}" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+        </Grid>
+        <Border Style="{StaticResource RowSeparator}" Margin="2,9,2,0"/>
+        <Grid Margin="2,0,2,0">
+          <!--   费用 carries its own unit in the cell rather than in the head:
+               the models of one account can be billed in one currency and the
+               models of the next in another, and a currency written once over a
+               column is a claim about every row under it. -->
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="62"/>
+            <ColumnDefinition Width="76"/>
+            <ColumnDefinition Width="72"/>
+            <ColumnDefinition Width="104"/>
+            <ColumnDefinition Width="116"/>
+          </Grid.ColumnDefinitions>
+          <Grid.RowDefinitions>
+            <RowDefinition Height="26"/>
+            <RowDefinition Height="Auto"/>
+          </Grid.RowDefinitions>
+          <TextBlock Grid.Row="0" Grid.Column="0" Text="模型" Style="{StaticResource TableHead}"/>
+          <TextBlock Grid.Row="0" Grid.Column="1" Text="请求" Style="{StaticResource TableHead}" HorizontalAlignment="Right"/>
+          <TextBlock Grid.Row="0" Grid.Column="2" Text="输入" Style="{StaticResource TableHead}" HorizontalAlignment="Right"/>
+          <TextBlock Grid.Row="0" Grid.Column="3" Text="输出" Style="{StaticResource TableHead}" HorizontalAlignment="Right"/>
+          <TextBlock Grid.Row="0" Grid.Column="4" Text="费用" Style="{StaticResource TableHead}" HorizontalAlignment="Right"/>
+          <TextBlock Grid.Row="0" Grid.Column="5" Text="占比" Style="{StaticResource TableHead}" HorizontalAlignment="Right"/>
+          <ItemsControl x:Name="ModelItems" Grid.Row="1" Grid.ColumnSpan="6">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate><StackPanel/></ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate>
+                <Grid Height="26">
+                  <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="62"/>
+                    <ColumnDefinition Width="76"/>
+                    <ColumnDefinition Width="72"/>
+                    <ColumnDefinition Width="104"/>
+                    <ColumnDefinition Width="116"/>
+                  </Grid.ColumnDefinitions>
+                  <TextBlock Grid.Column="0" Text="{Binding Name}" Style="{StaticResource Digit}" VerticalAlignment="Center"
+                             TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" ToolTip="{Binding Name}"/>
+                  <TextBlock Grid.Column="1" Text="{Binding RequestText}" Style="{StaticResource FigureCell}"/>
+                  <TextBlock Grid.Column="2" Text="{Binding InputText}" Style="{Binding InputStyle}"/>
+                  <TextBlock Grid.Column="3" Text="{Binding OutputText}" Style="{Binding OutputStyle}"/>
+                  <TextBlock Grid.Column="4" Text="{Binding CostText}" Style="{Binding CostStyle}"/>
+                  <Grid Grid.Column="5">
+                    <Grid Visibility="{Binding BarVisibility}">
+                      <Rectangle Height="5" RadiusX="2.5" RadiusY="2.5" Fill="{StaticResource QuotaTrackBrush}"
+                                 VerticalAlignment="Center" Margin="14,0,0,0"/>
+                      <Rectangle Height="5" RadiusX="2.5" RadiusY="2.5" Fill="{Binding Brush}" HorizontalAlignment="Left"
+                                 VerticalAlignment="Center" Margin="14,0,0,0" Width="{Binding BarWidth}"/>
+                    </Grid>
+                    <TextBlock Text="{Binding ShareText}" Style="{Binding ShareStyle}" Margin="8,0,0,0"/>
+                  </Grid>
+                </Grid>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+          <TextBlock x:Name="ModelEmpty" Grid.Row="1" Grid.ColumnSpan="6" Text="暂无模型 Token 数据"
+                     Foreground="{StaticResource MutedBrush}" FontSize="12" Margin="0,12,0,0" Visibility="Collapsed"/>
+        </Grid>
+
+        <!-- ============ providers and the token trend ============ -->
+        <Grid Margin="2,22,2,0">
+          <Grid.ColumnDefinitions><ColumnDefinition Width="1.05*"/><ColumnDefinition Width="1.4*"/></Grid.ColumnDefinitions>
+          <TextBlock Grid.Column="0" Text="按提供方拆分" Style="{StaticResource SectionTitle}"/>
+          <Grid Grid.Column="1">
+            <TextBlock Text="Token 趋势" Style="{StaticResource SectionTitle}"/>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+              <StackPanel Orientation="Horizontal" Margin="0,0,11,0">
+                <Ellipse Width="7" Height="7" Fill="{StaticResource BlueBrush}" Margin="0,0,5,0" VerticalAlignment="Center"/>
+                <TextBlock Text="Input" Foreground="{StaticResource MutedBrush}" FontSize="10"/>
+              </StackPanel>
+              <StackPanel Orientation="Horizontal" Margin="0,0,11,0">
+                <Ellipse Width="7" Height="7" Fill="{StaticResource FlowRateBrush}" Margin="0,0,5,0" VerticalAlignment="Center"/>
+                <TextBlock Text="Output" Foreground="{StaticResource MutedBrush}" FontSize="10"/>
+              </StackPanel>
+              <StackPanel Orientation="Horizontal" Margin="0,0,11,0">
+                <Ellipse Width="7" Height="7" Fill="{StaticResource OrangeBrush}" Margin="0,0,5,0" VerticalAlignment="Center"/>
+                <TextBlock Text="Cache Creation" Foreground="{StaticResource MutedBrush}" FontSize="10"/>
+              </StackPanel>
+              <StackPanel Orientation="Horizontal" Margin="0,0,11,0">
+                <Ellipse Width="7" Height="7" Fill="#15C7D7" Margin="0,0,5,0" VerticalAlignment="Center"/>
+                <TextBlock Text="Cache Read" Foreground="{StaticResource MutedBrush}" FontSize="10"/>
+              </StackPanel>
+              <StackPanel Orientation="Horizontal">
+                <Ellipse Width="7" Height="7" Fill="{StaticResource PurpleBrush}" Margin="0,0,5,0" VerticalAlignment="Center"/>
+                <TextBlock Text="Cache Hit Rate" Foreground="{StaticResource MutedBrush}" FontSize="10"/>
+              </StackPanel>
+            </StackPanel>
+          </Grid>
+        </Grid>
+        <Border Style="{StaticResource RowSeparator}" Margin="2,9,2,0"/>
+        <Grid Margin="2,8,2,0">
+          <Grid.ColumnDefinitions><ColumnDefinition Width="1.05*"/><ColumnDefinition Width="1.4*"/></Grid.ColumnDefinitions>
+          <StackPanel Grid.Column="0" Margin="0,0,22,0">
+            <Grid Height="20">
+              <TextBlock x:Name="ProviderSummary" HorizontalAlignment="Left" VerticalAlignment="Center"
+                         Foreground="{StaticResource MutedBrush}" FontSize="11"/>
+            </Grid>
+            <ItemsControl x:Name="ProviderItems">
+              <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                  <Grid Height="34">
+                    <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                      <TextBlock Text="{Binding Name}" Style="{StaticResource Digit}" TextTrimming="CharacterEllipsis"/>
+                      <TextBlock Text="{Binding RequestText}" Foreground="{StaticResource MutedBrush}" FontSize="10" Margin="0,2,0,0"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                      <TextBlock Text="{Binding TokenText}" Foreground="{StaticResource MutedBrush}" FontSize="10" VerticalAlignment="Center"/>
+                      <TextBlock Text="{Binding ShareText}" Foreground="{Binding Brush}" FontWeight="SemiBold" FontSize="11"
+                                 Margin="12,0,0,0" VerticalAlignment="Center"/>
+                    </StackPanel>
+                  </Grid>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+          <Grid Grid.Column="1">
+            <Canvas x:Name="TrendChart" Height="228" Background="Transparent" SizeChanged="OnChartSizeChanged"
+                    MouseMove="OnTrendChartMouseMove" MouseLeave="OnTrendChartMouseLeave"/>
+            <TextBlock x:Name="TrendEmpty" Text="暂无 Token 数据；有 Token 事件后将在这里绘制趋势"
+                       Foreground="{StaticResource MutedBrush}" FontSize="12" HorizontalAlignment="Center"
+                       VerticalAlignment="Center" TextAlignment="Center"/>
+          </Grid>
+        </Grid>
+
+        <!-- ============ accounts ============ -->
+        <Grid Margin="2,22,2,0">
+          <TextBlock Text="账户" Style="{StaticResource SectionTitle}"/>
+          <TextBlock x:Name="AccountScopeText" Style="{StaticResource Note}" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+        </Grid>
+        <Border Style="{StaticResource RowSeparator}" Margin="2,9,2,0"/>
+        <!--   one row per account, and one currency per row.
+             There is no combined row and no window-wide currency: a domestic
+             account is billed in CNY and an overseas one in USD, so the only
+             honest place for a unit is beside the account it belongs to. 币种 is
+             a column rather than a suffix on three cells because every money
+             figure on the row is in the same one. -->
+        <Grid Margin="2,0,2,0">
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="62"/>
+            <ColumnDefinition Width="86"/>
+            <ColumnDefinition Width="76"/>
+            <ColumnDefinition Width="86"/>
+            <ColumnDefinition Width="104"/>
+          </Grid.ColumnDefinitions>
+          <Grid.RowDefinitions>
+            <RowDefinition Height="26"/>
+            <RowDefinition Height="Auto"/>
+          </Grid.RowDefinitions>
+          <TextBlock Grid.Row="0" Grid.Column="0" Text="账户" Style="{StaticResource TableHead}"/>
+          <TextBlock Grid.Row="0" Grid.Column="1" Text="币种" Style="{StaticResource TableHead}" HorizontalAlignment="Right"/>
+          <TextBlock Grid.Row="0" Grid.Column="2" Text="余额" Style="{StaticResource TableHead}" HorizontalAlignment="Right"/>
+          <TextBlock Grid.Row="0" Grid.Column="3" Text="今日" Style="{StaticResource TableHead}" HorizontalAlignment="Right"/>
+          <TextBlock Grid.Row="0" Grid.Column="4" Text="近 30 天" Style="{StaticResource TableHead}" HorizontalAlignment="Right"/>
+          <TextBlock Grid.Row="0" Grid.Column="5" Text="计费" Style="{StaticResource TableHead}" HorizontalAlignment="Right"/>
+          <ItemsControl x:Name="AccountRowItems" Grid.Row="1" Grid.ColumnSpan="6">
+            <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate>
+                <Grid Height="28">
+                  <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="62"/>
+                    <ColumnDefinition Width="86"/>
+                    <ColumnDefinition Width="76"/>
+                    <ColumnDefinition Width="86"/>
+                    <ColumnDefinition Width="104"/>
+                  </Grid.ColumnDefinitions>
+                  <TextBlock Grid.Column="0" Text="{Binding Name}" Style="{StaticResource Digit}" VerticalAlignment="Center"
+                             TextTrimming="CharacterEllipsis" ToolTip="{Binding Name}"/>
+                  <TextBlock Grid.Column="1" Text="{Binding Currency}" Style="{StaticResource FigureCell}"/>
+                  <TextBlock Grid.Column="2" Text="{Binding BalanceText}" Style="{Binding BalanceStyle}"/>
+                  <TextBlock Grid.Column="3" Text="{Binding TodayText}" Style="{Binding TodayStyle}"/>
+                  <TextBlock Grid.Column="4" Text="{Binding RecentText}" Style="{Binding RecentStyle}"/>
+                  <TextBlock Grid.Column="5" Text="{Binding BillingText}" Foreground="{Binding BillingBrush}"
+                             FontSize="11" FontFamily="{StaticResource UiFontFamily}"
+                             HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                </Grid>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+          <TextBlock x:Name="AccountEmpty" Grid.Row="1" Grid.ColumnSpan="6" Text="BalancePet 尚未上报任何账户余额"
+                     Foreground="{StaticResource MutedBrush}" FontSize="12" Margin="0,12,0,0" Visibility="Collapsed"/>
+        </Grid>
+
+        <!-- range selector: it redraws the trend above it, so it sits under it. -->
         <Border Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource PanelBorderBrush}"
-                BorderThickness="1" CornerRadius="10" Padding="15,10" Margin="0,0,0,12">
+                BorderThickness="1" CornerRadius="10" Padding="15,10" Margin="2,18,2,0">
           <Grid>
             <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-            <TextBlock Text="分析范围" Foreground="{StaticResource MutedBrush}" FontSize="12" VerticalAlignment="Center" Margin="0,0,10,0"/>
+            <TextBlock Text="分析范围" Style="{StaticResource RowLabel}" Margin="0,0,10,0"/>
             <ComboBox x:Name="TrendRangeSelector" Grid.Column="1" Width="170" Height="30"
                       SelectedIndex="1" Style="{StaticResource TrendRangeComboBox}" SelectionChanged="OnTrendRangeChanged">
               <ComboBoxItem Tag="Last24Hours" Content="近 24 小时 · 按小时"/>
@@ -312,216 +619,245 @@
               <ComboBoxItem Tag="Last90Days" Content="近 90 天 · 按周"/>
               <ComboBoxItem Tag="AllTime" Content="全部 · 按月"/>
             </ComboBox>
-            <TextBlock Grid.Column="3" Text="Token 趋势会随范围自动重绘" Foreground="{StaticResource SubtleBrush}" FontSize="11" VerticalAlignment="Center"/>
+            <TextBlock Grid.Column="3" Text="Token 趋势会随范围自动重绘" Foreground="{StaticResource StaleTintBrush}"
+                       FontSize="11" VerticalAlignment="Center"/>
           </Grid>
         </Border>
-        <Border x:Name="ProviderPanel" Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource PanelBorderBrush}"
-                BorderThickness="1" CornerRadius="10" Padding="17,15" Margin="0,0,0,12">
-          <StackPanel>
-            <Grid Margin="0,0,0,11">
-              <TextBlock Text="按提供方拆分" FontSize="17" FontWeight="SemiBold"/>
-              <TextBlock x:Name="ProviderSummary" Grid.Column="1" HorizontalAlignment="Right"
-                         Foreground="{StaticResource MutedBrush}" FontSize="12"/>
-            </Grid>
-            <ItemsControl x:Name="ProviderItems">
-              <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
-              <ItemsControl.ItemTemplate>
-                <DataTemplate>
-                  <Border Width="218" Margin="0,0,10,0" Padding="13" Background="{StaticResource PanelAltBrush}"
-                          BorderBrush="{StaticResource PanelBorderBrush}" BorderThickness="1" CornerRadius="8">
-                    <Grid>
-                      <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                      <StackPanel>
-                        <TextBlock Text="{Binding Name}" FontSize="15" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
-                        <TextBlock Text="{Binding RequestText}" Foreground="{StaticResource MutedBrush}" FontSize="11" Margin="0,7,0,0"/>
-                        <TextBlock Text="{Binding TokenText}" Foreground="{StaticResource MutedBrush}" FontSize="11" Margin="0,2,0,0"/>
-                      </StackPanel>
-                      <TextBlock Grid.Column="1" Text="{Binding ShareText}" Foreground="{Binding Brush}"
-                                 FontWeight="SemiBold" VerticalAlignment="Top"/>
-                    </Grid>
-                  </Border>
-                </DataTemplate>
-              </ItemsControl.ItemTemplate>
-            </ItemsControl>
-          </StackPanel>
-        </Border>
-        <Grid Margin="0,0,0,12">
-          <Grid.ColumnDefinitions><ColumnDefinition Width="1.05*"/><ColumnDefinition Width="1.4*"/></Grid.ColumnDefinitions>
-          <Border x:Name="ModelPanel" Grid.Column="0" Margin="0,0,6,0" Background="{StaticResource PanelBrush}"
-                  BorderBrush="{StaticResource PanelBorderBrush}" BorderThickness="1" CornerRadius="10" Padding="17,15">
-            <StackPanel>
-              <TextBlock Text="模型分布" FontSize="17" FontWeight="SemiBold"/>
-              <ItemsControl x:Name="ModelItems" Margin="0,12,0,0">
-                <ItemsControl.ItemTemplate>
-                  <DataTemplate>
-                    <Grid Margin="0,5">
-                      <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="6"/></Grid.RowDefinitions>
-                      <Grid>
-                        <TextBlock Text="{Binding Name}" FontSize="12" TextTrimming="CharacterEllipsis"/>
-                        <TextBlock Grid.Column="1" Text="{Binding TokenText}" HorizontalAlignment="Right"
-                                   Foreground="{StaticResource MutedBrush}" FontSize="11"/>
-                      </Grid>
-                      <ProgressBar Grid.Row="1" Value="{Binding Percent, Mode=OneWay}" Maximum="100" Height="5"
-                                   Margin="0,5,0,0" Foreground="{Binding Brush}"/>
-                    </Grid>
-                  </DataTemplate>
-                </ItemsControl.ItemTemplate>
-              </ItemsControl>
-              <TextBlock x:Name="ModelEmpty" Text="暂无模型 Token 数据" Foreground="{StaticResource MutedBrush}"
-                         FontSize="12" Margin="0,12,0,0" Visibility="Collapsed"/>
-            </StackPanel>
-          </Border>
-          <Border Grid.Column="1" Margin="6,0,0,0" Background="{StaticResource PanelBrush}"
-                  BorderBrush="{StaticResource PanelBorderBrush}" BorderThickness="1" CornerRadius="10" Padding="17,15">
-            <StackPanel>
-              <TextBlock Text="Token 使用趋势" FontSize="17" FontWeight="SemiBold" VerticalAlignment="Center"/>
-              <WrapPanel Margin="0,12,0,0">
-                <StackPanel Orientation="Horizontal" Margin="0,0,12,0">
-                  <Ellipse Width="8" Height="8" Fill="{StaticResource BlueBrush}" Margin="0,0,5,0" VerticalAlignment="Center"/>
-                  <TextBlock Text="Input" Foreground="{StaticResource MutedBrush}" FontSize="10"/>
-                </StackPanel>
-                <StackPanel Orientation="Horizontal" Margin="0,0,12,0">
-                  <Ellipse Width="8" Height="8" Fill="{StaticResource AccentBrush}" Margin="0,0,5,0" VerticalAlignment="Center"/>
-                  <TextBlock Text="Output" Foreground="{StaticResource MutedBrush}" FontSize="10"/>
-                </StackPanel>
-                <StackPanel Orientation="Horizontal" Margin="0,0,12,0">
-                  <Ellipse Width="8" Height="8" Fill="{StaticResource OrangeBrush}" Margin="0,0,5,0" VerticalAlignment="Center"/>
-                  <TextBlock Text="Cache Creation" Foreground="{StaticResource MutedBrush}" FontSize="10"/>
-                </StackPanel>
-                <StackPanel Orientation="Horizontal" Margin="0,0,12,0">
-                  <Ellipse Width="8" Height="8" Fill="#15C7D7" Margin="0,0,5,0" VerticalAlignment="Center"/>
-                  <TextBlock Text="Cache Read" Foreground="{StaticResource MutedBrush}" FontSize="10"/>
-                </StackPanel>
-                <StackPanel Orientation="Horizontal">
-                  <Ellipse Width="8" Height="8" Fill="{StaticResource PurpleBrush}" Margin="0,0,5,0" VerticalAlignment="Center"/>
-                  <TextBlock Text="Cache Hit Rate" Foreground="{StaticResource MutedBrush}" FontSize="10"/>
-                </StackPanel>
-              </WrapPanel>
-              <Grid Margin="0,8,0,0">
-                <Canvas x:Name="TrendChart" Height="218" Background="Transparent" SizeChanged="OnChartSizeChanged"
-                        MouseMove="OnTrendChartMouseMove" MouseLeave="OnTrendChartMouseLeave"/>
-                <TextBlock x:Name="TrendEmpty" Text="暂无 Token 数据；有 Token 事件后将在这里绘制趋势"
-                           Foreground="{StaticResource MutedBrush}" FontSize="12" HorizontalAlignment="Center"
-                           VerticalAlignment="Center" TextAlignment="Center"/>
-              </Grid>
-            </StackPanel>
-          </Border>
-        </Grid>
-        <DockPanel Margin="0,13,0,0">
-          <TextBlock x:Name="StatusText" Foreground="{StaticResource MutedBrush}" TextWrapping="Wrap"
-                     FontSize="11" VerticalAlignment="Center"/>
-          <Button x:Name="OpenDataButton" DockPanel.Dock="Right" Content="打开数据目录"
-                  Click="OnOpenDataClick" Padding="12,7"/>
+
+        <DockPanel Margin="2,14,2,20">
+          <TextBlock x:Name="StatusText" Foreground="{StaticResource StaleTintBrush}" TextWrapping="Wrap"
+                     FontSize="10.5" VerticalAlignment="Center" Margin="0,0,12,0"/>
+          <Button x:Name="OpenDataButton" DockPanel.Dock="Right" Content="打开数据目录" Style="{StaticResource ToolButton}"
+                  Click="OnOpenDataClick" Padding="12,0"/>
         </DockPanel>
       </StackPanel>
     </ScrollViewer>
-    <!-- A Grid rather than a ScrollViewer: the list must be given a bounded
+
+    <!-- ======================= usage ledger =======================
+         A Grid rather than a ScrollViewer: the list must be given a bounded
          height, otherwise it never virtualizes and every row is realized at
-         once, which makes switching the client filter take seconds. -->
-    <Grid x:Name="HistoryScrollViewer" Grid.Column="1" Margin="0,48,0,0" Visibility="Collapsed">
+         once, which makes switching the client filter take seconds.
+
+         One row per task. Clicking a row opens that row itself — the container
+         grows, raises its own background, rounds its own corners and grows a
+         2 px accent bar down its left edge while the task's details[] fade in
+         inside it. The row is generated in code rather than declared in a
+         template because a height lane has to be able to measure the panel it
+         is opening to; see MainWindow.Ledger. -->
+    <Grid x:Name="HistoryScrollViewer" Grid.Row="1" Grid.Column="4" Margin="14,0,14,0" Visibility="Collapsed">
       <Grid.RowDefinitions>
+        <RowDefinition Height="58"/>
         <RowDefinition Height="Auto"/>
         <RowDefinition Height="Auto"/>
+        <RowDefinition Height="36"/>
         <RowDefinition Height="*"/>
+        <RowDefinition Height="Auto"/>
       </Grid.RowDefinitions>
-      <Grid Grid.Row="0" Margin="28,26,30,20">
-        <StackPanel>
-          <TextBlock Text="使用记录" FontSize="28" FontWeight="Bold"/>
-          <TextBlock Text="逐条查看请求的模型与 Token；站点汇总额度显示在仪表盘" Foreground="{StaticResource MutedBrush}" FontSize="13" Margin="0,4,0,0"/>
+
+      <!--   Which account this list is showing, written under the title.
+            The account list is 250 px to the left and its selected row says the
+            same thing, but a selected row says "this one is picked", not "this
+            list is filtered by it" — and the second is the claim the ledger
+            makes. It used to be a badge that appeared only for the two groups;
+            it is a line here because the scope is no longer optional.
+
+            There is no combined scope any more: each account has its own unit
+            and its own token efficiency, so a list that added accounts together
+            described no account at all. See REDESIGN-NOTES 第六轮 §5. -->
+      <StackPanel Grid.Row="0" VerticalAlignment="Center">
+        <TextBlock Text="使用记录" Style="{StaticResource PageTitle}"/>
+        <TextBlock x:Name="LedgerScopeText" FontSize="11.5" Margin="0,4,0,0"
+                   Foreground="{StaticResource FlowRateBrush}" TextTrimming="CharacterEllipsis"/>
+      </StackPanel>
+
+      <Grid Grid.Row="1">
+        <StackPanel Orientation="Horizontal">
+          <WrapPanel x:Name="ProviderFilterPanel" Orientation="Horizontal"/>
         </StackPanel>
-        <TextBlock x:Name="RecentSummary" HorizontalAlignment="Right" VerticalAlignment="Bottom" Foreground="{StaticResource MutedBrush}" FontSize="12"/>
+        <TextBlock x:Name="RecentSummary" HorizontalAlignment="Right" VerticalAlignment="Center"
+                   Foreground="{StaticResource MutedBrush}" FontSize="11"/>
       </Grid>
-      <WrapPanel x:Name="ProviderFilterPanel" Grid.Row="1" Orientation="Horizontal" Margin="28,0,30,12"/>
-      <Border x:Name="RecentPanel" Grid.Row="2" Margin="28,0,30,30"
-              Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource PanelBorderBrush}"
-              BorderThickness="1" CornerRadius="10" Padding="12">
-        <ListView x:Name="EventsList" SelectionChanged="OnEventSelectionChanged"
-                  ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                  VirtualizingStackPanel.IsVirtualizing="True"
-                  VirtualizingStackPanel.VirtualizationMode="Recycling"
-                  ScrollViewer.CanContentScroll="True">
-            <ListView.ItemTemplate>
-              <DataTemplate>
-                <Border Padding="0" Margin="0" Background="Transparent"
-                        BorderBrush="Transparent" BorderThickness="0" CornerRadius="9"
-                        Cursor="Hand" MouseLeftButtonUp="OnEventCardClick">
-                  <Grid MinWidth="700">
-                    <Grid.ColumnDefinitions><ColumnDefinition Width="142"/><ColumnDefinition Width="1.5*"/><ColumnDefinition Width="2.4*"/><ColumnDefinition Width="112"/></Grid.ColumnDefinitions>
-                    <StackPanel>
-                      <TextBlock Text="{Binding OccurredAtText}" FontSize="12" FontWeight="SemiBold"/>
-                      <TextBlock Text="{Binding DurationText}" Foreground="{StaticResource MutedBrush}" FontSize="10" Margin="0,4,0,0"/>
-                      <TextBlock Text="{Binding StatusText}" Foreground="{Binding StatusBrush}" FontSize="10" Margin="0,3,0,0"/>
-                    </StackPanel>
-                    <StackPanel Grid.Column="1" Margin="0,0,14,0">
-                      <TextBlock Text="{Binding ProviderLine}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
-                      <TextBlock Text="{Binding Model}" Foreground="{StaticResource MutedBrush}" FontSize="11" Margin="0,5,0,0" TextTrimming="CharacterEllipsis"/>
-                      <TextBlock Text="{Binding ReasoningText}" Foreground="{StaticResource MutedBrush}" FontSize="10" Margin="0,3,0,0"/>
-                    </StackPanel>
-                    <Grid Grid.Column="2" Margin="0,0,14,0">
-                      <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition/></Grid.ColumnDefinitions>
-                      <StackPanel>
-                        <TextBlock Text="{Binding InputText}" Foreground="{StaticResource BlueBrush}" FontSize="11"/>
-                        <TextBlock Text="{Binding CacheReadText}" Foreground="#15C7D7" FontSize="11" Margin="0,5,0,0"/>
-                      </StackPanel>
-                      <StackPanel Grid.Column="1">
-                        <TextBlock Text="{Binding OutputText}" Foreground="{StaticResource AccentBrush}" FontSize="11"/>
-                        <TextBlock Text="{Binding CacheWriteText}" Foreground="{StaticResource OrangeBrush}" FontSize="11" Margin="0,5,0,0"/>
-                      </StackPanel>
-                    </Grid>
-                    <StackPanel Grid.Column="3" VerticalAlignment="Center">
-                      <TextBlock Text="{Binding CostCaption}" Foreground="{StaticResource MutedBrush}" FontSize="10" TextAlignment="Right"/>
-                      <TextBlock Text="{Binding CostText}" Foreground="{StaticResource PurpleBrush}" FontWeight="SemiBold" Margin="0,4,0,0" TextAlignment="Right"/>
-                    </StackPanel>
-                  </Grid>
-                </Border>
-              </DataTemplate>
-            </ListView.ItemTemplate>
-        </ListView>
+
+      <!-- The group notice: the two groups that are not accounts, entered from the
+           account column on the left. Collapsed outside those two scopes, because a
+           strip that repeats "every account" is one more line of chrome over the list
+           it describes. Inside them it carries what a label cannot: for 未归属 the
+           sentence that makes the group actionable — whose records these are, and that
+           the client's account can be entered — and for 归档 what the archive is, which
+           accounts were removed, and the ceiling that bounds how much of them is kept.
+           The ceiling control sits in this strip because the number it writes and the
+           sentence that reads it back belong side by side. -->
+      <Border x:Name="GroupNotice" Grid.Row="2" Visibility="Collapsed" Margin="2,10,2,0"
+              Background="{StaticResource PanelAltBrush}" BorderBrush="{StaticResource PanelBorderBrush}"
+              BorderThickness="1" CornerRadius="9" Padding="12,10,12,10">
+        <Grid>
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="Auto"/>
+          </Grid.ColumnDefinitions>
+          <Border x:Name="GroupBadge" Grid.Column="0" CornerRadius="8" Padding="9,3,9,3"
+                  VerticalAlignment="Top" Background="{StaticResource FlowCostBrush}">
+            <TextBlock x:Name="GroupBadgeText" FontSize="11" FontWeight="SemiBold" Foreground="White"/>
+          </Border>
+          <StackPanel Grid.Column="1" Margin="11,0,14,0" VerticalAlignment="Center">
+            <TextBlock x:Name="GroupNoticeLine" FontSize="11.5" TextWrapping="Wrap"
+                       Foreground="{StaticResource TextBrush}"/>
+            <TextBlock x:Name="GroupAdviceLine" FontSize="11" TextWrapping="Wrap" Margin="0,4,0,0"
+                       Foreground="{StaticResource FlowCostBrush}"/>
+          </StackPanel>
+          <StackPanel x:Name="ArchiveLimitPanel" Grid.Column="2" Orientation="Horizontal"
+                      VerticalAlignment="Center" Visibility="Collapsed">
+            <TextBlock Text="归档上限" FontSize="11" VerticalAlignment="Center"
+                       Foreground="{StaticResource MutedBrush}" Margin="0,0,8,0"/>
+            <ComboBox x:Name="ArchiveLimitBox" Style="{StaticResource TrendRangeComboBox}" MinWidth="84"
+                      ToolTip="归档保留的记录条数上限；持久化在插件的 usage-analytics-archive.v1.json"
+                      SelectionChanged="OnArchiveLimitChanged"/>
+            <TextBlock Text="条" FontSize="11" VerticalAlignment="Center"
+                       Foreground="{StaticResource MutedBrush}" Margin="7,0,0,0"/>
+          </StackPanel>
+        </Grid>
       </Border>
+
+      <!-- The head declares one column per field the task carries, and the task
+           row below it declares the same ten in the same widths, so a task's
+           numbers and its details' numbers line up in one column each. Its columns
+           are written by the same code that writes the rows' — one list, in
+           MainWindow.LedgerColumns — so the head cannot drift away from the rows it
+           describes. 830 px of the 864 px content width: a clipped timestamp is
+           worse than a tight one. -->
+      <!-- The head itself is inside the scroller below, next to the list it labels: two
+           things that have to move together are one thing, and a transform mirroring the
+           scroller's offset is a second copy of a number the layout already knows — the
+           copy is what kept disagreeing with the original. This row is left in place,
+           empty, so every row below keeps the number it had. -->
+      <Border Grid.Row="3" Height="0"/>
+
+      <Border Grid.Row="4" Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource PanelBorderBrush}"
+              BorderThickness="1" CornerRadius="10" Padding="16,8,10,8">
+        <!--   The list's width comes from this scroller, not from the list's own.
+             A ListView with a horizontal bar of its own measures its items against
+             the viewport it had before its vertical bar appeared, so its extent is
+             always one scrollbar wider than the space left and the bar is drawn even
+             when the table fits — which is what the first attempt at this fix
+             produced. Outside the list the measurement is honest: the list is
+             measured at its content width, this scroller's own bar appears exactly
+             when that width is wider than the frame, and the vertical bar stays
+             where it was, on the list. -->
+        <ScrollViewer x:Name="LedgerScroller" HorizontalScrollBarVisibility="Auto"
+                      VerticalScrollBarVisibility="Disabled" Focusable="False">
+          <!-- Rows, not a stack panel: the list has to keep a bounded height or it loses
+               its own vertical bar and measures all sixty-four rows at once. Auto over
+               star gives the head its 26 px and the list everything left, and both of
+               them are inside the scroller, so the horizontal bar moves the labels and
+               the table in the same step — there is no second offset to get wrong. -->
+          <Grid>
+            <Grid.RowDefinitions>
+              <RowDefinition Height="Auto"/>
+              <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+            <Border x:Name="LedgerHead" Grid.Row="0" Margin="2,10,2,0" VerticalAlignment="Bottom"/>
+          <!-- ScrollViewer.VerticalScrollBarVisibility is Visible, not Auto, and that is the
+               whole cure for the two bars twitching together: with Auto, the outer horizontal
+               bar appearing takes 17 px of height, the list then decides its vertical bar is
+               no longer needed, that takes 17 px of width, the outer extent changes with it,
+               and the horizontal bar goes away again — a loop with a visible period. A bar
+               that is always reserved cannot take part in it, and this list holds 64 rows: it
+               is scrolling in almost every window. -->
+          <ListView x:Name="EventsList" Grid.Row="1" SelectionChanged="OnEventSelectionChanged"
+                    ScrollViewer.VerticalScrollBarVisibility="Visible">
+          <ListView.ItemTemplate>
+            <DataTemplate>
+              <!-- The click target is this element, and the element's child is the
+                   row itself: it is generated in code, because a height lane has to
+                   be able to measure the detail panel it is opening to and a
+                   template cannot hand that over. Every row is pulled through this
+                   presenter, so a task row, an expanded one and a collapsed one are
+                   the same object in three states rather than three layouts. See
+                   MainWindow.GenerateRows.
+
+                   Left-aligned rather than stretched. A stretched host is as wide as
+                   the viewport, and the moment the vertical scrollbar takes 10 px off
+                   that viewport the list's extent is wider than its viewport again —
+                   which draws a horizontal bar that is always there and never needed.
+                   Sized to the card, the extent is the card's own width, so the bar
+                   appears for the windows whose columns do not fit and for no others. -->
+              <Border x:Name="LedgerRowHost" Padding="0" Margin="0" Background="Transparent"
+                      HorizontalAlignment="Left"
+                      BorderBrush="Transparent" BorderThickness="0" Cursor="Hand"
+                      MouseLeftButtonUp="OnEventCardClick"/>
+            </DataTemplate>
+          </ListView.ItemTemplate>
+          </ListView>
+          </Grid>
+        </ScrollViewer>
+      </Border>
+
+      <StackPanel Grid.Row="5" Margin="2,12,2,18">
+        <TextBlock Style="{StaticResource Note}" FontSize="10.5" Foreground="{StaticResource StaleTintBrush}"
+                   TextWrapping="Wrap"
+                   Text="一行是一次任务；点这一行，它的子请求明细会在这行里面展开。同一时刻只展开一行。缓存与费用均为 BalancePet 的本地记录，未上报的读数不会被写成 0。"/>
+        <!-- The census, under the list it counts. Written into one line so the check is
+             an addition rather than a look-up: a reader adds the groups and gets the
+             total, or the window is wrong. It is the same census the account column's
+             rows, the scope badge and the summary above are drawn from, so the four
+             agreeing is a property of one pass over the log rather than four agreeing
+             calculations. -->
+        <TextBlock x:Name="CensusLine" Style="{StaticResource Note}" FontSize="10.5"
+                   Foreground="{StaticResource MutedBrush}" Margin="0,6,0,0" TextWrapping="Wrap"/>
+      </StackPanel>
     </Grid>
-    <Grid x:Name="HistoryDetailView" Grid.Column="1" Margin="0,48,0,0" Visibility="Collapsed" Opacity="0"
+
+    <!-- ======================= task detail ======================= -->
+    <Grid x:Name="HistoryDetailView" Grid.Row="1" Grid.Column="4" Margin="14,0,14,0" Visibility="Collapsed" Opacity="0"
           Background="{StaticResource PageBrush}">
       <Grid.RenderTransform>
         <ScaleTransform x:Name="HistoryDetailScale" ScaleX="0.97" ScaleY="0.97"/>
       </Grid.RenderTransform>
       <ScrollViewer x:Name="HistoryDetailScrollViewer" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-        <StackPanel Margin="28,24,30,30">
-          <Button x:Name="DetailBackButton" Click="OnDetailBackClick" HorizontalAlignment="Left" Background="Transparent" BorderBrush="Transparent" Padding="0,4" Margin="0,0,0,16">
+        <StackPanel Margin="0,20,0,30">
+          <Button x:Name="DetailBackButton" Click="OnDetailBackClick" HorizontalAlignment="Left" Background="Transparent"
+                  BorderBrush="Transparent" Padding="0,4" Margin="0,0,0,14">
             <StackPanel Orientation="Horizontal">
-              <Path Data="M 10,2 L 4,8 L 10,14" Stroke="{StaticResource MutedBrush}" StrokeThickness="1.7" Stretch="None" Width="14" Height="16" Margin="0,0,7,0"/>
+              <Path Data="{StaticResource BackGeometry}" Stroke="{StaticResource MutedBrush}" StrokeThickness="1.7"
+                    Stretch="None" Width="14" Height="16" Margin="0,0,7,0"/>
               <TextBlock Text="返回使用记录" Foreground="{StaticResource MutedBrush}" VerticalAlignment="Center"/>
             </StackPanel>
           </Button>
-          <Grid Margin="0,0,0,18">
+          <Grid Margin="0,0,0,16">
             <StackPanel>
-              <TextBlock Text="使用记录详情" FontSize="28" FontWeight="Bold"/>
+              <TextBlock Text="使用记录详情" Style="{StaticResource PageTitle}"/>
               <TextBlock Text="单次任务的 Token 构成、额度变化与中转请求" Foreground="{StaticResource MutedBrush}" FontSize="13" Margin="0,4,0,0"/>
             </StackPanel>
-            <TextBlock Text="{Binding OccurredAtText}" HorizontalAlignment="Right" VerticalAlignment="Bottom" Foreground="{StaticResource MutedBrush}" FontSize="12"/>
+            <TextBlock Text="{Binding OccurredAtText}" HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                       Foreground="{StaticResource MutedBrush}" FontSize="12" FontFamily="{StaticResource DigitFontFamily}"/>
           </Grid>
-          <Border Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource PanelBorderBrush}" BorderThickness="1" CornerRadius="10" Padding="17,15" Margin="0,0,0,12">
+          <Border Style="{StaticResource Card}" Margin="0,0,0,12">
             <Grid>
               <Grid.ColumnDefinitions><ColumnDefinition Width="1.35*"/><ColumnDefinition Width="1.15*"/><ColumnDefinition Width="1.1*"/></Grid.ColumnDefinitions>
               <StackPanel>
                 <TextBlock Text="{Binding ProviderLine}" FontSize="16" FontWeight="SemiBold"/>
                 <TextBlock Text="{Binding Model}" Foreground="{StaticResource MutedBrush}" Margin="0,5,0,0"/>
                 <TextBlock Text="{Binding ReasoningText}" Foreground="{StaticResource MutedBrush}" FontSize="11" Margin="0,3,0,0"/>
+                <TextBlock Text="{Binding StepsToolsText}" Foreground="{StaticResource MutedBrush}" FontSize="11" Margin="0,3,0,0"/>
               </StackPanel>
               <StackPanel Grid.Column="1">
-                <TextBlock Text="任务状态" Foreground="{StaticResource MutedBrush}" FontSize="11"/>
+                <TextBlock Text="任务状态" Style="{StaticResource RowLabel}"/>
                 <TextBlock Text="{Binding StatusText}" Foreground="{Binding StatusBrush}" FontSize="18" FontWeight="SemiBold" Margin="0,5,0,0"/>
                 <TextBlock Text="{Binding DurationText}" Foreground="{StaticResource MutedBrush}" FontSize="11" Margin="0,3,0,0"/>
               </StackPanel>
               <StackPanel Grid.Column="2" HorizontalAlignment="Right">
-                <TextBlock Text="{Binding CostCaption}" Foreground="{StaticResource MutedBrush}" FontSize="11" TextAlignment="Right"/>
-                <TextBlock Text="{Binding CostText}" Foreground="{StaticResource PurpleBrush}" FontSize="19" FontWeight="SemiBold" Margin="0,5,0,0" TextAlignment="Right"/>
-                <TextBlock Text="{Binding CostNote}" Foreground="{StaticResource MutedBrush}" FontSize="10" Margin="0,3,0,0" TextAlignment="Right" MaxWidth="260" TextWrapping="Wrap"/>
+                <TextBlock Text="{Binding CostCaption}" Style="{StaticResource RowLabel}" TextAlignment="Right"/>
+                <TextBlock Text="{Binding CostText}" Foreground="{StaticResource PurpleBrush}" FontSize="19" FontWeight="SemiBold"
+                           Margin="0,5,0,0" TextAlignment="Right" FontFamily="{StaticResource DigitFontFamily}"/>
+                <TextBlock Text="{Binding CostNote}" Foreground="{StaticResource MutedBrush}" FontSize="10" Margin="0,3,0,0"
+                           TextAlignment="Right" MaxWidth="260" TextWrapping="Wrap"/>
               </StackPanel>
             </Grid>
           </Border>
           <Grid Margin="0,0,0,12">
             <Grid.ColumnDefinitions><ColumnDefinition Width="1.1*"/><ColumnDefinition Width="1.9*"/></Grid.ColumnDefinitions>
-            <Border Grid.Column="0" Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource PanelBorderBrush}" BorderThickness="1" CornerRadius="10" Padding="15" Margin="0,0,6,0">
+            <Border Grid.Column="0" Style="{StaticResource Card}" Padding="15" Margin="0,0,6,0">
               <StackPanel>
                 <TextBlock Text="Token 构成" FontSize="15" FontWeight="SemiBold"/>
                 <TextBlock Text="输入、缓存与输出的相对比例" Foreground="{StaticResource MutedBrush}" FontSize="11" Margin="0,4,0,8"/>
@@ -529,7 +865,7 @@
                 <TextBlock x:Name="TokenChartEmpty" Text="暂无 Token 数据" Foreground="{StaticResource MutedBrush}" FontSize="11" HorizontalAlignment="Center" Visibility="Collapsed"/>
               </StackPanel>
             </Border>
-            <Border x:Name="CostTimelinePanel" Grid.Column="1" Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource PanelBorderBrush}" BorderThickness="1" CornerRadius="10" Padding="15" Margin="6,0,0,0">
+            <Border x:Name="CostTimelinePanel" Grid.Column="1" Style="{StaticResource Card}" Padding="15" Margin="6,0,0,0">
               <StackPanel>
                 <TextBlock Text="额度时间线" FontSize="15" FontWeight="SemiBold"/>
                 <TextBlock Text="每次中转请求的费用变化" Foreground="{StaticResource MutedBrush}" FontSize="11" Margin="0,4,0,8"/>
@@ -538,7 +874,7 @@
               </StackPanel>
             </Border>
           </Grid>
-          <Border x:Name="TokenTrendPanel" Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource PanelBorderBrush}" BorderThickness="1" CornerRadius="10" Padding="15" Margin="0,0,0,12">
+          <Border x:Name="TokenTrendPanel" Style="{StaticResource Card}" Padding="15" Margin="0,0,0,12">
             <StackPanel>
               <Grid>
                 <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
@@ -556,7 +892,7 @@
                     <TextBlock Text="缓存读取" Foreground="{StaticResource MutedBrush}" FontSize="10"/>
                   </StackPanel>
                   <StackPanel Orientation="Horizontal">
-                    <Ellipse Width="7" Height="7" Fill="{StaticResource AccentBrush}" Margin="0,0,5,0"/>
+                    <Ellipse Width="7" Height="7" Fill="{StaticResource FlowRateBrush}" Margin="0,0,5,0"/>
                     <TextBlock Text="输出" Foreground="{StaticResource MutedBrush}" FontSize="10"/>
                   </StackPanel>
                 </StackPanel>
@@ -565,27 +901,30 @@
               <TextBlock x:Name="TokenTrendEmpty" Text="暂无逐条 Token 数据" Foreground="{StaticResource MutedBrush}" FontSize="11" HorizontalAlignment="Center" Visibility="Collapsed"/>
             </StackPanel>
           </Border>
-          <Border x:Name="RelayDetailPanel" Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource PanelBorderBrush}" BorderThickness="1" CornerRadius="10" Padding="15">
+          <Border x:Name="RelayDetailPanel" Style="{StaticResource Card}" Padding="15">
             <StackPanel>
               <TextBlock Text="中转请求明细" FontSize="15" FontWeight="SemiBold"/>
               <TextBlock Text="按时间查看本次任务的每次请求、Token 与费用" Foreground="{StaticResource MutedBrush}" FontSize="11" Margin="0,4,0,9"/>
               <Grid Margin="0,0,0,5">
                 <Grid.ColumnDefinitions><ColumnDefinition Width="78"/><ColumnDefinition Width="2*"/><ColumnDefinition Width="1.1*"/><ColumnDefinition Width="1.1*"/><ColumnDefinition Width="1.1*"/></Grid.ColumnDefinitions>
-                <TextBlock Text="时间" Foreground="{StaticResource MutedBrush}" FontSize="10"/>
-                <TextBlock Grid.Column="1" Text="模型" Foreground="{StaticResource MutedBrush}" FontSize="10"/>
-                <TextBlock Grid.Column="2" Text="输入" Foreground="{StaticResource MutedBrush}" FontSize="10"/>
-                <TextBlock Grid.Column="3" Text="输出" Foreground="{StaticResource MutedBrush}" FontSize="10"/>
-                <TextBlock Grid.Column="4" Text="额度" Foreground="{StaticResource MutedBrush}" FontSize="10" TextAlignment="Right"/>
+                <TextBlock Text="时间" Style="{StaticResource ColumnHead}"/>
+                <TextBlock Grid.Column="1" Text="模型 · 强度" Style="{StaticResource ColumnHead}"/>
+                <TextBlock Grid.Column="2" Text="输入" Style="{StaticResource ColumnHead}" HorizontalAlignment="Right"/>
+                <TextBlock Grid.Column="3" Text="输出" Style="{StaticResource ColumnHead}" HorizontalAlignment="Right"/>
+                <TextBlock Grid.Column="4" Text="费用" Style="{StaticResource ColumnHead}" TextAlignment="Right"/>
               </Grid>
+              <Border Style="{StaticResource RowSeparator}"/>
               <ItemsControl ItemsSource="{Binding Details}">
                 <ItemsControl.ItemTemplate>
                   <DataTemplate>
                     <Grid Margin="0,5">
                       <Grid.ColumnDefinitions><ColumnDefinition Width="78"/><ColumnDefinition Width="2*"/><ColumnDefinition Width="1.1*"/><ColumnDefinition Width="1.1*"/><ColumnDefinition Width="1.1*"/></Grid.ColumnDefinitions>
-                      <TextBlock Text="{Binding TimeText}" Foreground="{StaticResource MutedBrush}" FontSize="10" VerticalAlignment="Center"/>
-                      <TextBlock Grid.Column="1" Text="{Binding ModelEffortText}" FontSize="11" TextTrimming="CharacterEllipsis"/>
-                      <TextBlock Grid.Column="2" Text="{Binding InputText}" Foreground="{StaticResource BlueBrush}" FontSize="10" VerticalAlignment="Center"/>
-                      <TextBlock Grid.Column="3" Text="{Binding OutputText}" Foreground="{StaticResource AccentBrush}" FontSize="10" VerticalAlignment="Center"/>
+                      <TextBlock Text="{Binding TimeText}" Foreground="{StaticResource MutedBrush}" FontSize="10"
+                                 FontFamily="{StaticResource DigitFontFamily}" VerticalAlignment="Center"/>
+                      <TextBlock Grid.Column="1" Text="{Binding ModelEffortText}" FontSize="11" TextWrapping="NoWrap"
+                                 TextTrimming="CharacterEllipsis" ToolTip="{Binding ModelEffortText}"/>
+                      <TextBlock Grid.Column="2" Text="{Binding InputText}" Foreground="{StaticResource BlueBrush}" FontSize="10" VerticalAlignment="Center" TextAlignment="Right"/>
+                      <TextBlock Grid.Column="3" Text="{Binding OutputText}" Foreground="{StaticResource FlowRateBrush}" FontSize="10" VerticalAlignment="Center" TextAlignment="Right"/>
                       <TextBlock Grid.Column="4" Text="{Binding CostText}" Foreground="{StaticResource PurpleBrush}" FontSize="10" TextAlignment="Right" VerticalAlignment="Center"/>
                     </Grid>
                   </DataTemplate>

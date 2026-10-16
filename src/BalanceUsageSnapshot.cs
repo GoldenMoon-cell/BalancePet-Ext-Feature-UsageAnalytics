@@ -28,6 +28,43 @@ public sealed class BalanceUsageSnapshot
     /// <summary>Every account the host reported, in the order the file lists them.</summary>
     public IReadOnlyList<string> Accounts { get; private init; } = Array.Empty<string>();
 
+    /// <summary>
+    /// When the host last wrote this document. <c>null</c> when the file carried
+    /// no readable timestamp, which is a different thing from "written now": the
+    /// account table desaturates a balance it can no longer vouch for, and an
+    /// unreadable timestamp is not evidence that the figure is current.
+    /// </summary>
+    public DateTimeOffset? UpdatedAt { get; private init; }
+
+    /// <summary>
+    /// One row per account, for the account table. Presentation of what this
+    /// reader already parsed — same three arrays, same validation, no new file
+    /// and no field the schema does not declare.
+    /// <para>
+    /// <c>AccountId</c> is the document's <c>selected_account_id</c> when it has
+    /// one, so a row can be marked as the account every other reading on the page
+    /// describes; empty means the document did not say.
+    /// </para>
+    /// </summary>
+    public IReadOnlyList<Row> Rows { get; private init; } = Array.Empty<Row>();
+
+    /// <summary>One account's slice of the snapshot.</summary>
+    /// <param name="AccountId">Opaque id, resolved to a display name by <see cref="AccountDirectory"/>.</param>
+    /// <param name="HasBalance">False when the account has usage entries but the host never published a balance for it.</param>
+    /// <param name="Balance">Latest reported balance, meaningless when <paramref name="HasBalance"/> is false.</param>
+    /// <param name="HasToday">False when the account has no entry dated today — which is not the same as a measured 0.</param>
+    /// <param name="HasRecent">False when the account has no entry inside the last 30 days.</param>
+    public sealed record Row(
+        string AccountId,
+        string Currency,
+        bool HasBalance,
+        double Balance,
+        bool HasToday,
+        double Today,
+        bool HasRecent,
+        double Recent,
+        bool IsSelected);
+
     /// <param name="accountId">
     /// Restricts every figure to one account. Empty — the default — means all
     /// accounts, so the balance, usage and today figures always describe the
@@ -82,6 +119,31 @@ public sealed class BalanceUsageSnapshot
             var totalBalance = balanceGroups.Length == 1
                 ? balanceGroups[0].Sum(entry => entry.Amount)
                 : selectedBalance?.Amount ?? 0;
+
+            // The account table: one row per account the document names, each with
+            // its own day. Dated on the same clock the figures above use, so a row
+            // cannot say "today" about a different today.
+            var rows = new List<Row>(accounts.Length);
+            foreach (var account in accounts)
+            {
+                var balanceEntry = allBalances.FirstOrDefault(entry => string.Equals(entry!.AccountId, account, StringComparison.OrdinalIgnoreCase));
+                var own = entries.Where(entry => string.Equals(entry!.AccountId, account, StringComparison.OrdinalIgnoreCase)).ToArray();
+                var ownToday = own.Where(entry => entry!.Date == today).ToArray();
+                var ownRecent = own.Where(entry => DateTime.TryParseExact(entry!.Date, "yyyy-MM-dd",
+                        System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out var date)
+                    && date >= recentFrom).ToArray();
+                rows.Add(new Row(
+                    account,
+                    balanceEntry?.Currency ?? own.FirstOrDefault()?.Currency ?? "USD",
+                    balanceEntry is not null,
+                    balanceEntry?.Amount ?? 0,
+                    ownToday.Length > 0,
+                    ownToday.Sum(entry => entry!.Usage),
+                    ownRecent.Length > 0,
+                    ownRecent.Sum(entry => entry!.Usage),
+                    string.Equals(account, selected, StringComparison.OrdinalIgnoreCase) && selected.Length > 0));
+            }
+
             return new BalanceUsageSnapshot
             {
                 HasData = todayEntries.Length > 0,
@@ -95,7 +157,9 @@ public sealed class BalanceUsageSnapshot
                 BalanceCurrency = commonCurrency,
                 AccountId = latest?.AccountId ?? selectedBalance?.AccountId ?? "",
                 Accounts = accounts,
-                BalanceAccountCount = balanceGroups.Length == 1 ? balances.Length : selectedBalance is null ? 0 : 1
+                BalanceAccountCount = balanceGroups.Length == 1 ? balances.Length : selectedBalance is null ? 0 : 1,
+                UpdatedAt = ReadUpdatedAt(document.UpdatedAt),
+                Rows = rows,
             };
         }
         catch (IOException) { return Empty(); }
@@ -138,9 +202,20 @@ public sealed class BalanceUsageSnapshot
 
     private static BalanceUsageSnapshot Empty() => new() { HasData = false };
 
+    /// <summary>
+    /// The document's own write time, when it has one. A malformed stamp yields
+    /// null rather than "now": the only use of this value is deciding whether a
+    /// figure is still current, and inventing a fresh stamp there would defeat it.
+    /// </summary>
+    private static DateTimeOffset? ReadUpdatedAt(string value)
+        => DateTimeOffset.TryParse(value, System.Globalization.CultureInfo.InvariantCulture,
+            System.Globalization.DateTimeStyles.AdjustToUniversal | System.Globalization.DateTimeStyles.AssumeUniversal,
+            out var parsed) ? parsed : null;
+
     private sealed class Document
     {
         [JsonPropertyName("schema")] public string Schema { get; set; } = "";
+        [JsonPropertyName("updated_at")] public string UpdatedAt { get; set; } = "";
         [JsonPropertyName("selected_account_id")] public string? SelectedAccountId { get; set; }
         [JsonPropertyName("entries")] public Entry[]? Entries { get; set; }
         [JsonPropertyName("balances")] public BalanceEntry[]? Balances { get; set; }

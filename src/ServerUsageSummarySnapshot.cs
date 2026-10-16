@@ -15,7 +15,15 @@ public sealed class ServerUsageSummarySnapshot
     public string Currency { get; private init; } = "USD";
     public string Date { get; private init; } = "";
 
-    public static ServerUsageSummarySnapshot Read(string directory, DateTimeOffset? now = null)
+    /// <param name="accountId">
+    /// Restricts the reading to one account. Empty — the default — uses the document's
+    /// own <c>selected_account_id</c>, which is what a caller that does not care about
+    /// the account gets; a caller that is showing a particular account passes it, so
+    /// 「站点今日」 cannot be another account's figure. An id no entry carries — the
+    /// sentinel a group scope passes — yields no reading, which is the honest answer:
+    /// a group of records belonging to no account has no site to report on.
+    /// </param>
+    public static ServerUsageSummarySnapshot Read(string directory, DateTimeOffset? now = null, string? accountId = null)
     {
         try
         {
@@ -24,7 +32,7 @@ public sealed class ServerUsageSummarySnapshot
             var document = JsonSerializer.Deserialize<Document>(File.ReadAllText(path), Options);
             if (document is null || document.Schema != Schema || document.Entries is null) return Empty();
 
-            var selected = document.SelectedAccountId ?? "";
+            var selected = accountId ?? document.SelectedAccountId ?? "";
             var entries = document.Entries
                 .Where(entry => entry is not null && IsValid(entry))
                 .Where(entry => string.IsNullOrWhiteSpace(selected) || entry!.AccountId == selected)

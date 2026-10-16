@@ -1,5 +1,54 @@
 # Changelog
 
+## 0.5.2
+
+### Features
+
+- Scope the history to one account. The account list on the left drives the history list as well as the dashboard: clicking an account shows only that account's tasks and 全部账户 shows all of them, with the same result feeding the list, the provider chips' counts, a badge above the list and the count on each account row. Both pages share the one selection, so the account chosen on one page is the account chosen on the other. The dashboard keeps its aggregate view — it already routes the balance ruler, the quota card and the account table per account, and narrowing that whole page to one account would answer a smaller question than the page asks.
+- Give a pay-as-you-go key a gauge instead of a percentage nobody can define. The bar measures what is left of the last top-up: the denominator is the balance observed right after the balance last rose, and the current balance is the numerator. The plugin watches for that rise itself — the host records balance decreases only, so it cannot supply top-ups — and keeps up to 64 observations per account in `usage-analytics-balances.v1.json`. A rise of at least `max(0.5, 1% of the previous reading)` counts as a top-up; a balance at or above the baseline becomes the new baseline and draws full, never past it; fractions are clamped to 0..1 and accounts in different currencies are never compared. With no recorded top-up the bar is not drawn at all and the row says 未记录充值 · 仅显示余额.
+
+### Improvements
+
+- Draw the plan allowance from one reading. The balance ruler and the account row resolved different fields (`quota_windows` on one side, `quota_limit` on the other), so one account could show a percentage in the card and nothing at all in the list. `QuotaReading` is now the only place that resolves an allowance, the row holds a reference to it instead of a copy of its numbers, and `quota_windows` wins with `quota_limit` plus `quota_reset_day` as the fallback for settings written by older builds.
+- Let the click choose the highlighted account. The account list is built when the data changes, not on every refresh, so nothing rebuilt it when the selection moved and the highlight stayed on the first row. `ApplyAccountSelection` is called from the click path now, rows are reused rather than replaced, and the three colour channels cross-fade over 250 ms.
+- Fold the subscription allowance in place. The container carried an explicit `Height=0`, so the expand animated zero to zero and the card never opened. An outer element clips the height while an inner one carries the content, and the expanded state is remembered per account.
+- Keep the provider filter's transition. The chip row was rebuilt at the end of every filter change, which destroyed the animation that had just started; the chips are reused when the provider set and its order are unchanged, so only the counters change.
+- Build a row's detail panel when the row is opened, not while the list is being filled. Every ledger row constructed its whole sub-request panel and measured it as it was built, which is invisible until the tasks carry sub-requests: the Codex filter listed 365 tasks carrying 2,008 sub-requests and took 2.9 s to paint, while the DeepSeek Harness filter listed 971 tasks carrying none and took 0.4 s — the slower filter was the one with fewer rows. The panel is built on the first expand now and the same filter paints in 0.12 s.
+- Leave the list alone when nothing about it changed. `Refresh()` assigned `ItemsSource` unconditionally, and that assignment drops all 64 realized containers, so switching accounts rebuilt a list the switch does not affect. The rebuild is keyed to a signature of the account filter, the provider filter and the visible event ids now: 全部账户 went from 1.2 s to 0.09 s and DeepSeek Harness from 0.5 s to 0.12 s.
+
+### Fixes
+
+- Stop drawing a cost share for a cost nobody reported. Rows whose cost the host never sent drew a 0% bar, which reads as "this model was free" rather than "this number is unknown"; they read 未上报 and draw no bar.
+- Give the 口径 column room for its own value. The value was right-aligned in a 98 px column while the text needed about 131 px, so its left 33 px were cut off and `Cache Read / Input` rendered as `re Read / Input`. The label and the value are both shorter now, and a paired reading that still overflows ellipsises with a tooltip carrying the full string.
+- Write the subscription branch's figure. The 26 px reading on a subscription account was never assigned: it showed 已用 暂无数据 at launch, and the balance of the previous account after switching over from a pay-as-you-go key. It is summed from the cycle's events now, so the three figures on that card agree.
+- Say 等待重置 instead of 0 小时后重置. A reset instant that has already passed is waiting for the next window, not zero hours away.
+- Name the product instead of the internals. User-facing strings that said 主程序 now say BalancePet, and the line that explains a missing ceiling reads 额度上限未上报 · 这里只显示已用；BalancePet 会记录累计用量 rather than waiting for a record the host never writes.
+
+## 0.5.1
+
+### Fixes
+
+- Let the click decide which account is highlighted. The hover handlers wrote the row background directly, so passing the pointer down the account list repainted whichever row was under it and the all-accounts row kept the highlight no matter which account was selected. A selected row now ignores hover and keeps the background its selection gave it.
+
+### Improvements
+
+- Ease the transitions that used to jump. The account list hover, the Dashboard/History switch and the content-area swap now run on a `PowerEase` (`EaseInOut`, power 2) over 200–300 ms, so the navigation background and label colours cross-fade instead of snapping and an account row lights up progressively rather than in one step. The content swap changes `Visibility` only after the outgoing view has finished fading, which is what removes the flicker.
+- Animate a brush of its own rather than the shared one. A frozen resource brush cannot carry an animation, so each transition stops any animation already running and animates the colour of a fresh `SolidColorBrush` it assigns to the element.
+
+## 0.5.0
+
+### Features
+
+- Redraw the window from the approved prototype. A full-width balance ruler at the top, one shared column head over four reading columns, then the model and account tables — with one 26 px figure in the whole window and every reading set in a monospace face so decimal points line up down a column.
+- Route the balance ruler by account type. A subscription gets a share of its plan's allowance and the date it renews; a pay-as-you-go key gets a balance, the pace today's spend implies, and the user's own warning line highlighted in the cost colour. A key with no ceiling is never given a percentage: an invented denominator is a made-up number wearing a progress bar.
+- Open a task row in place. A row is one task; clicking it grows that row, raises its own background, rounds its own corners and grows a 2 px accent bar down its left edge, while the task's sub-requests fade in inside it. One row at a time, and the full-window detail view is still there behind the button in the opened row.
+- Read the plan allowance where the account declares one. `quota_limit`, `quota_reset_day` and `warning_below` are read from the account settings the host already writes; with no ceiling the reading says 未上报 rather than 0%.
+
+### Fixes
+
+- Never print an unreported counter as zero. Every figure now carries whether the host reported it: a measured zero stays `0`, an absent reading is 未上报 in the stale tint, and the cache hit rate — the one place the two were printed as the same thing — reads 未上报 when no input was reported at all.
+- Keep a stale reading rather than hiding it. A balance document older than an hour draws its figures desaturated while still showing the last value the host published.
+
 ## 0.4.0
 
 ### Features
